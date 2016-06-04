@@ -25,6 +25,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -44,6 +45,9 @@
    that we also accept an END message that marks the
    end of the response. */
 #define WAITING_ACCEPT_END 1 << (8 + 0)
+
+/* Timeout until request end */
+#define REQUEST_TIMEOUT 1
 
 #define DISPLAY_VALUE_BUFFER UINT8_MAX
 
@@ -79,6 +83,12 @@ static struct aligned_row {
 } *aligned_display;
 
 int aligned_max_len = 0;
+
+static void sig_timeout(int signum)
+{
+  fprintf(stderr, "server error: timeout\n");
+  exit(EXIT_FAILURE);
+}
 
 static void xfree(void *ptr)
 {
@@ -410,9 +420,15 @@ static int send_request(const struct request_context *req, const char *command, 
 static void client(const char *socket_path, const char *command, const char *argument)
 {
   struct request_context request;
+  struct sigaction act_timeout = { .sa_handler = sig_timeout, .sa_flags   = 0 };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX,
                                 .sun_len    = strlen(socket_path) };
   int waiting;
+
+  /* limit request time */
+  sigfillset(&act_timeout.sa_mask);
+  sigaction(SIGALRM, &act_timeout, NULL);
+  alarm(REQUEST_TIMEOUT);
 
   /* socket creation */
   request.socket = xsocket(AF_UNIX, SOCK_DGRAM, 0);
