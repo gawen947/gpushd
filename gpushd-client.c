@@ -426,8 +426,7 @@ static void client(const char *socket_path, const char *command, const char *arg
 {
   struct request_context request;
   struct sigaction act_timeout = { .sa_handler = sig_timeout, .sa_flags   = 0 };
-  struct sockaddr_un s_addr = { .sun_family = AF_UNIX,
-                                .sun_len    = strlen(socket_path) };
+  struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
   int waiting;
 
   /* limit request time */
@@ -436,11 +435,13 @@ static void client(const char *socket_path, const char *command, const char *arg
   sigaction(SIGALRM, &act_timeout, NULL);
   alarm(REQUEST_TIMEOUT);
 
-  /* socket creation */
-  request.socket = xsocket(AF_UNIX, SOCK_DGRAM, 0);
-
   /* socket creation  */
   xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
+
+  /* socket creation */
+  request.socket    = xsocket(AF_UNIX, SOCK_DGRAM, 0);
+  request.s_addr    = (struct sockaddr *)&s_addr;
+  request.s_addrlen = SUN_LEN(&s_addr);
 
   /* assemble the rest of the request context */
   request.request_id = getpid();
