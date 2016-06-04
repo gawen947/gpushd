@@ -393,9 +393,11 @@ static int send_request(const struct request_context *req, const char *command, 
     /* The argument may be too long. */
     /* FIXME: We should check if argument is possible in the client. */
     /* FIXME: We should limit the length in the client. */
-    if(len >= (BUFFER_SIZE - sizeof(struct gpushd_message)))
+    if(len >= (BUFFER_SIZE - sizeof(struct gpushd_message))) {
       /* FIXME: use the dedicated error function */
-      errx(EXIT_FAILURE, "argument error: argument too long");
+      fprintf(stderr, "argument error: argument too long\n");
+      exit(EXIT_FAILURE);
+    }
 
     memcpy(message->data, argument, len);
   }
