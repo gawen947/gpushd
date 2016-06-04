@@ -579,8 +579,8 @@ static void setup_siglist(int signals[], struct sigaction *act, int size)
 
 static void setup_signals(void)
 {
-  struct sigaction act_swap = { .sa_handler = sig_swap };
-  struct sigaction act_term = { .sa_handler = sig_term };
+  struct sigaction act_swap = { .sa_handler = sig_swap, .sa_flags = 0 };
+  struct sigaction act_term = { .sa_handler = sig_term, .sa_flags = 0 };
 
   int signals_term[] = {
     SIGHUP,
