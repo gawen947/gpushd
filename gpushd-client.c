@@ -111,21 +111,28 @@ static void commit_aligned_display(void)
   for(row = aligned_display ; row ; row = row->next) {
     int size = row->len;
 
-    /* An empty value means an empty row. */
-    if(!row->value) {
+    /* An empty description means an empty row. */
+    if(!row->description) {
       fputc('\n', stdout);
       continue;
     }
 
-    puts(row->description);
+    fputs(row->description, stdout);
+
     for(; size <= aligned_max_len ; size++)
       fputc(' ', stdout);
-    puts(": ");
-    puts(row->value);
+
+    if(row->value) {
+      fputs(": ", stdout);
+      fputs(row->value, stdout);
+    }
+
     if(row->unit) {
       fputc(' ', stdout);
-      puts(row->unit);
+      fputs(row->unit, stdout);
     }
+
+    fputc('\n', stdout);
   }
 
   /* Now we can free everything.
@@ -360,6 +367,24 @@ static int send_request(const struct request_context *req, const char *command, 
     message->code  = GPUSHD_REQ_EXTVER;
     waiting       = GPUSHD_RES_FIELD;
     waiting      |= WAITING_ACCEPT_END;
+  }
+  else {
+    /* Display message list. */
+    fprintf(stderr, "argument error: unknown command\n");
+    fprintf(stderr, "Use one of the following:\n\n");
+
+    push_aligned_display("push"   , NULL, "Push a value (argument required).");
+    push_aligned_display("pop"    , NULL, "Pop a value.");
+    push_aligned_display("get"    , NULL, "Get the value on top of the stack.");
+    push_aligned_display("list"   , NULL, "List all entries.");
+    push_aligned_display("info"   , NULL, "Display server statistics.");
+    push_aligned_display("clean"  , NULL, "Remove all entries.");
+    push_aligned_display("version", NULL, "Display server version.");
+    push_aligned_display("extver" , NULL, "Display extended version information.");
+
+    commit_aligned_display();
+
+    exit(EXIT_FAILURE);
   }
 
   sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
