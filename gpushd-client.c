@@ -331,6 +331,7 @@ static int send_request(const struct request_context *req, const char *command, 
   unsigned int len = 0;
   int waiting = 0;
   int argument_required = 0;
+  ssize_t ret;
 
   message->id = req->request_id;
 
@@ -411,7 +412,12 @@ static int send_request(const struct request_context *req, const char *command, 
     memcpy(message->data, argument, len);
   }
 
-  sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
+  /* FIXME: use a separate function for sending. */
+  ret = sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
+  if(ret < 0) {
+    perror("client error: sendto()");
+    exit(EXIT_FAILURE);
+  }
 
   return waiting;
 }

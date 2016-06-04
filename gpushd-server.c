@@ -280,6 +280,7 @@ static void send_response(const struct request_context *req, int code, const voi
 {
   static char message_buffer[BUFFER_SIZE];
   struct gpushd_message *message = (struct gpushd_message *)message_buffer;
+  ssize_t ret;
 
   /* build the message */
   message->id   = req->request_id;
@@ -289,7 +290,11 @@ static void send_response(const struct request_context *req, int code, const voi
     memcpy(message->data, data, len);
 
   /* send the message */
-  sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
+  ret = sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
+  if(ret < 0) {
+    perror("server error: sendto()");
+    exit(EXIT_FAILURE);
+  }
 
   stats.nb_sent++;
 }
