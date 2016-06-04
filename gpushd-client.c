@@ -284,8 +284,7 @@ static int response(int waiting, struct request_context *req)
   struct gpushd_message *message = (struct gpushd_message *)buffer;
   int n;
 
-  /* FIXME: should timeout (and abort).
-            use setsockopt() ? */
+  /* FIXME: use setsockopt() for timeout ? */
   n = recvfrom(req->socket, buffer, BUFFER_SIZE, 0, req->s_addr, &req->s_addrlen);
   if(n < 0)
     err(EXIT_FAILURE, "network error");
@@ -426,6 +425,7 @@ static void client(const char *socket_path, const char *command, const char *arg
   int waiting;
 
   /* limit request time */
+  /* FIXME: use setsockopt() instead */
   sigfillset(&act_timeout.sa_mask);
   sigaction(SIGALRM, &act_timeout, NULL);
   alarm(REQUEST_TIMEOUT);
