@@ -321,25 +321,16 @@ static int send_request(const struct request_context *req, const char *command, 
   struct gpushd_message *message = (struct gpushd_message *)message_buffer;
   unsigned int len = 0;
   int waiting = 0;
+  int argument_required = 0;
 
   message->id = req->request_id;
 
-  if(argument) {
-    len = strlen(argument);
-
-    /* The argument may be too long. */
-    /* FIXME: We should check if argument is possible in the client. */
-    /* FIXME: We should limit the length in the client. */
-    if(len >= (BUFFER_SIZE - sizeof(struct gpushd_message)))
-      /* FIXME: use the dedicated error function */
-      errx(EXIT_FAILURE, "argument error: argument too long");
-
-    memcpy(message->data, argument, len);
-  }
-
   /* TODO: we should use an optimized tree parser here */
-  if(!strcmp(command, "push"))
+  /* FIXME: parse the command and argument in another function. */
+  if(!strcmp(command, "push")) {
     message->code = GPUSHD_REQ_PUSH;
+    argument_required = 1;
+  }
   else if(!strcmp(command, "pop")) {
     message->code = GPUSHD_REQ_POP;
     waiting      = GPUSHD_RES_ITEM;
@@ -385,6 +376,28 @@ static int send_request(const struct request_context *req, const char *command, 
     commit_aligned_display();
 
     exit(EXIT_FAILURE);
+  }
+
+  if(!argument && argument_required) {
+    fprintf(stderr, "argument error: argument required\n");
+    exit(EXIT_FAILURE);
+  }
+  else if (argument && !argument_required) {
+    fprintf(stderr, "argument error: excess argument\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if(argument) {
+    len = strlen(argument);
+
+    /* The argument may be too long. */
+    /* FIXME: We should check if argument is possible in the client. */
+    /* FIXME: We should limit the length in the client. */
+    if(len >= (BUFFER_SIZE - sizeof(struct gpushd_message)))
+      /* FIXME: use the dedicated error function */
+      errx(EXIT_FAILURE, "argument error: argument too long");
+
+    memcpy(message->data, argument, len);
   }
 
   sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
