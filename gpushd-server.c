@@ -486,7 +486,7 @@ static void parse(const char *buf, int len, int fd)
      If we receive multiple messages, we skip them all. */
   len -= sizeof(struct gpushd_message);
   if(len != message->len) {
-    warnx("multiple requests");
+    warnx("invalid or pending requests");
     return;
   }
 
