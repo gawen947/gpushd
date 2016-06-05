@@ -285,7 +285,7 @@ static int response(int waiting, struct request_context *req)
   int n;
 
   /* FIXME: use setsockopt() for timeout ? */
-  n = recvfrom(req->socket, buffer, BUFFER_SIZE, 0, req->s_addr, &req->s_addrlen);
+  n = recvfrom(req->socket, buffer, BUFFER_SIZE, 0, NULL, NULL);
   if(n < 0)
     err(EXIT_FAILURE, "network error");
 

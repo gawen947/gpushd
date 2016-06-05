@@ -457,7 +457,7 @@ static void request_extver(const struct request_context *req)
 }
 
 static void parse(const char *buf, int len,
-                  struct sockaddr *s_addr, socklen_t addrlen)
+                  int socket, struct sockaddr *s_addr, socklen_t addrlen)
 {
   /* this list must follow the order of the request message
      definition in the common header. we use the message code value
@@ -484,6 +484,7 @@ static void parse(const char *buf, int len,
   context.len         = len;
   context.s_addr      = s_addr;
   context.s_addrlen   = addrlen;
+  context.socket      = socket;
 
   /* check the length of the header */
   if(len < 0) {
@@ -521,32 +522,31 @@ static void server(const char *socket_path, int sync)
 {
   int ttl = sync;
 
-  struct sockaddr_un s_addr = { .sun_family = AF_UNIX,
-                                .sun_len    = strlen(socket_path) };
+  struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
   int sd;
+  socklen_t addrlen;
 
   /* socket creation */
   sd = xsocket(AF_UNIX, SOCK_DGRAM, 0);
 
   /* bind to the specified unix socket */
   xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
-  xbind(sd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
+  addrlen = SUN_LEN(&s_addr);
+  xbind(sd, (struct sockaddr *)&s_addr, addrlen);
 
   while(1) {
     struct timespec begin, end;
-    struct sockaddr s_addr;
-    socklen_t addrlen;
     char buf[BUFFER_SIZE];
     int n;
 
     /* read the message */
-    n = recvfrom(sd, buf, BUFFER_SIZE, 0, &s_addr, &addrlen);
+    n = recvfrom(sd, buf, BUFFER_SIZE, 0, NULL, NULL);
     if(n < 0)
       err(EXIT_FAILURE, "network error");
 
     /* parse and compute parsing time */
     clock_gettime(CLOCK_MONOTONIC, &begin);
-    parse(buf, n, &s_addr, addrlen);
+    parse(buf, n, sd, (struct sockaddr *)&s_addr, addrlen);
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     /* statistics */
