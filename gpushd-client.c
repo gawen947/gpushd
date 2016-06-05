@@ -327,7 +327,7 @@ static int parse(struct gpushd_message *message, size_t *len, int *left, int wai
 static int response(int waiting, struct request_context *req)
 {
   static char buffer[BUFFER_SIZE];
-  struct gpushd_message *message = (struct gpushd_message *)buffer;
+  void *msg_ptr = buffer;
   int n;
 
   /* FIXME: use setsockopt() for timeout ? */
@@ -344,7 +344,7 @@ static int response(int waiting, struct request_context *req)
   while(n) {
     size_t len;
 
-    waiting = parse(message, &len, &n, waiting, req);
+    waiting = parse(msg_ptr, &len, &n, waiting, req);
 
     /* We tried to parse a message that is longer than the buffer content. */
     if(n < 0)
@@ -355,7 +355,7 @@ static int response(int waiting, struct request_context *req)
       errx(EXIT_FAILURE, "message pending after request");
 
     /* Update message pointer */
-    message += len;
+    msg_ptr += len;
   }
 
   return waiting;
