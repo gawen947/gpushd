@@ -86,6 +86,8 @@ int aligned_max_len = 0;
 
 static void sig_timeout(int signum)
 {
+  UNUSED(signum);
+
   fprintf(stderr, "server error: timeout\n");
   exit(EXIT_FAILURE);
 }
