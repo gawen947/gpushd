@@ -68,9 +68,6 @@ enum {
   GPUSHD_ERROR_MINOR_CODE
 };
 
-/* FIXME: Is it the correct empty ID according to the client? */
-#define EMPTY_ID 0
-
 struct gpushd_stats {
   /* number of messages sent */
   unsigned long nb_sent;
