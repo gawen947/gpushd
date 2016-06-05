@@ -283,9 +283,6 @@ static int parse(struct gpushd_message *message, size_t *len, int *left, int wai
     response_version,
     NULL /* end is captured earlier */ };
 
-  if(message->id != req->request_id)
-    errx(EXIT_FAILURE, "expected request id 0x%x but got 0x%x instead", req->request_id, message->id);
-
   *len = sizeof(struct gpushd_message) + message->len;
 
   /* not enough bytes in buffer */
@@ -369,8 +366,6 @@ static int send_request(const struct request_context *req, const char *command, 
   int waiting = 0;
   int argument_required = 0;
   ssize_t ret;
-
-  message->id = req->request_id;
 
   /* TODO: we should use an optimized tree parser here */
   /* FIXME: parse the command and argument in another function. */
@@ -482,9 +477,6 @@ static void client(const char *socket_path, const char *command, const char *arg
 
   /* connect to server */
   xconnect(request.fd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
-
-  /* assemble the rest of the request context */
-  request.request_id = getpid();
 
   /* send request and wait for responses */
   waiting = send_request(&request, command, argument);

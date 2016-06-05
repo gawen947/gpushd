@@ -290,7 +290,6 @@ static void send_response(const struct request_context *req, int code, const voi
   ssize_t ret;
 
   /* build the message */
-  message->id   = req->request_id;
   message->code = code;
   message->len  = len;
 
@@ -493,14 +492,11 @@ static void parse(const char *buf, int len, int fd)
 
   /* assemble the request context */
   context.data        = message->data;
-  context.request_id  = message->id;
   context.len         = len;
   context.fd          = fd;
 
   /* check the length of the header */
   if(len < 0) {
-    context.request_id = EMPTY_ID;
-
     send_error(&context, error_code(PARSING, HEADER_LEN));
     return;
   }
