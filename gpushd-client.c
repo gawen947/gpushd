@@ -101,7 +101,7 @@ static void xfree(void *ptr)
 static void push_aligned_display(const char *description, const char *value, const char *unit)
 {
   struct aligned_row *row = xmalloc(sizeof(struct aligned_row));
-  int len = strlen(description);
+  int len = description ? strlen(description) : 0;
 
   /* Push the new row on the list. */
   *row = (struct aligned_row){ description, value, unit,
