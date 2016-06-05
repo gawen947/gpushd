@@ -1,6 +1,5 @@
 include commands.mk
 
-OPTS    := -O2
 CFLAGS  := -std=c99 $(OPTS) -fPIC -Wall
 LDFLAGS :=
 
@@ -23,8 +22,10 @@ ifneq ($(commit), UNKNOWN)
 endif
 
 ifndef DISABLE_DEBUG
+OPTS   := -O0
 CFLAGS += -ggdb
 else
+OPTS   := -O2
 CFLAGS += -DNDEBUG=1
 endif
 
