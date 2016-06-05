@@ -177,12 +177,21 @@ static void response_info(const struct request_context *req)
   push_aligned_display(NULL, NULL, NULL);
 
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->sum_nsec);
+  if(stats->sum_nsec == 0)
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
+  else
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->sum_nsec);
   push_aligned_display("Total processing time", strdup(buffer), "ns");
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->min_nsec);
+  if(stats->min_nsec == UINT64_MAX)
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
+  else
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->min_nsec);
   push_aligned_display("Min processing time", strdup(buffer), "ns");
 
+  if(stats->max_nsec == 0)
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
+  else
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->max_nsec);
   push_aligned_display("Max processing time", strdup(buffer), "ns");
 

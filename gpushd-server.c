@@ -49,7 +49,7 @@ enum s_magic {
 };
 
 /* various statistics */
-static struct gpushd_stats stats;
+static struct gpushd_stats stats = { .min_nsec = UINT64_MAX };
 
 /* path to a swap file for the stack and statistics
    and the unix socket used for the server */
