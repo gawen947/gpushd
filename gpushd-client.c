@@ -417,7 +417,7 @@ static int send_request(const struct request_context *req, const char *command, 
   /* FIXME: use a separate function for sending. */
   ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
   if(ret < 0) {
-    perror("client error: sendto()");
+    perror("client error: send()");
     exit(EXIT_FAILURE);
   }
 

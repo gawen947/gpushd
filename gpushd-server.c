@@ -299,7 +299,7 @@ static void send_response(const struct request_context *req, int code, const voi
   /* send the message */
   ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
   if(ret < 0) {
-    perror("server error: sendto()");
+    perror("server error: send()");
     return;
   }
 
