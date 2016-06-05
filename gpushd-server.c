@@ -603,8 +603,8 @@ static void setup_signals(void)
 {
   struct sigaction act_swap = { .sa_handler = sig_swap, .sa_flags = 0 };
   struct sigaction act_term = { .sa_handler = sig_term, .sa_flags = 0 };
+  struct sigaction act_ign  = { .sa_handler = SIG_IGN,  .sa_flags = 0 };
 
-  /* FIXME: Do we need all those signals? */
   int signals_term[] = {
     SIGHUP,
     SIGINT,
@@ -614,8 +614,13 @@ static void setup_signals(void)
     SIGUSR1,
     SIGUSR2 };
 
+  int signals_ign[] = {
+    SIGPIPE /* raised when client broke pipe */
+  };
+
   setup_siglist(signals_term, &act_term, sizeof_array(signals_term));
   setup_siglist(signals_swap, &act_swap, sizeof_array(signals_swap));
+  setup_siglist(signals_ign, &act_ign, sizeof_array(signals_ign));
 }
 
 int main(int argc, char *argv[])
