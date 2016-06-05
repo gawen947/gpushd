@@ -107,7 +107,7 @@ struct gpushd_error {
 struct gpushd_message {
   uint32_t id;   /* request ID */
   uint8_t  code; /* message code */
-
+  uint16_t len;  /* data length */
   unsigned char data[];
 };
 

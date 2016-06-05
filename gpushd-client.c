@@ -214,7 +214,8 @@ static void response_info(const struct request_context *req)
 
 static void response_item(const struct request_context *req)
 {
-  puts(req->data);
+  fwrite(req->data, req->len, 1, stdout);
+  fputc('\n', stdout);
 }
 
 static void response_version(const struct request_context *req)
@@ -249,7 +250,8 @@ static void response_field(const struct request_context *req)
   memcpy(out, name, name_len);               out += name_len;
   memcpy(out, separator, sizeof(separator)); out += sizeof(separator);
   memcpy(out, value, value_len);             out += value_len;
-  *out = '\n';
+  *out++ = '\n';
+  *out   = '\0';
 
   puts(out);
 }
@@ -268,7 +270,7 @@ static void response_error(const struct request_context *req)
   fprintf(stderr, "%s: %s\n", error_major[error->major], error_minor[error->minor]);
 }
 
-static int response(int waiting, struct request_context *req)
+static int parse(struct gpushd_message *message, size_t *len, int *left, int waiting, struct request_context *req)
 {
   /* this list must follow the order of the response message
      definition in the common header. we use the message code value
@@ -281,24 +283,21 @@ static int response(int waiting, struct request_context *req)
     response_version,
     NULL /* end is captured earlier */ };
 
-  static char buffer[BUFFER_SIZE];
-  struct gpushd_message *message = (struct gpushd_message *)buffer;
-  int n;
-
-  /* FIXME: use setsockopt() for timeout ? */
-  n = recv(req->fd, buffer, BUFFER_SIZE, 0);
-  if(n < 0)
-    err(EXIT_FAILURE, "network error");
-
   if(message->id != req->request_id)
     errx(EXIT_FAILURE, "expected request id 0x%x but got 0x%x instead", req->request_id, message->id);
 
-  n -= sizeof(struct gpushd_message);
+  *len = sizeof(struct gpushd_message) + message->len;
+
+  /* not enough bytes in buffer */
+  *left -= *len;
+  if(*left < 0)
+    return 0;
 
   /* update request context */
   req->data = message->data;
-  req->len  = n;
+  req->len  = message->len;
 
+  /* special messages */
   switch(message->code) {
   case(GPUSHD_RES_END):
     if(waiting & WAITING_ACCEPT_END)
@@ -323,6 +322,43 @@ static int response(int waiting, struct request_context *req)
     return waiting;
   else
     return 0;
+}
+
+static int response(int waiting, struct request_context *req)
+{
+  static char buffer[BUFFER_SIZE];
+  struct gpushd_message *message = (struct gpushd_message *)buffer;
+  int n;
+
+  /* FIXME: use setsockopt() for timeout ? */
+  /* FIXME: what if we receive multiple message at once that fall outside the buffer? */
+  n = recv(req->fd, buffer, BUFFER_SIZE, 0);
+  if(n < 0)
+    err(EXIT_FAILURE, "network error");
+
+  /* The messages are passed on a stream unix socket.
+     So we make the assumption that we always receive
+     complete messages. At worst we receive multiple
+     messages in one time.
+     FIXME: Don't think it's true with signals. */
+  while(n) {
+    size_t len;
+
+    waiting = parse(message, &len, &n, waiting, req);
+
+    /* We tried to parse a message that is longer than the buffer content. */
+    if(n < 0)
+      errx(EXIT_FAILURE, "message falling short");
+
+    /* Our request ended but there are messages left to parse. */
+    if(!waiting && n > 0)
+      errx(EXIT_FAILURE, "message pending after request");
+
+    /* Update message pointer */
+    message += len;
+  }
+
+  return waiting;
 }
 
 static int send_request(const struct request_context *req, const char *command, const char *argument)
@@ -413,6 +449,9 @@ static int send_request(const struct request_context *req, const char *command, 
 
     memcpy(message->data, argument, len);
   }
+
+  /* Now that the message is assembled we can set the len field. */
+  message->len = len;
 
   /* FIXME: use a separate function for sending. */
   ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);

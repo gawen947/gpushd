@@ -292,6 +292,7 @@ static void send_response(const struct request_context *req, int code, const voi
   /* build the message */
   message->id   = req->request_id;
   message->code = code;
+  message->len  = len;
 
   if(data)
     memcpy(message->data, data, len);
@@ -481,8 +482,14 @@ static void parse(const char *buf, int len, int fd)
   const struct gpushd_message *message = (const struct gpushd_message *)buf;
   struct request_context context;
 
-  /* compute data length */
+  /* Compute data length and check the len field of the message.
+     We should only receive one request at a time on the socket.
+     If we receive multiple messages, we skip them all. */
   len -= sizeof(struct gpushd_message);
+  if(len != message->len) {
+    warnx("multiple requests");
+    return;
+  }
 
   /* assemble the request context */
   context.data        = message->data;
