@@ -388,6 +388,7 @@ static int send_request(const struct request_context *req, const char *command, 
     exit(EXIT_FAILURE);
   }
 
+  /* FIXME: this check should be done before we create the connection */
   if(!argument && argument_required) {
     fprintf(stderr, "argument error: argument required\n");
     exit(EXIT_FAILURE);
