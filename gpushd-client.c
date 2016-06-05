@@ -215,7 +215,6 @@ static void response_info(const struct request_context *req)
 static void response_item(const struct request_context *req)
 {
   puts(req->data);
-  fputc('\n', stdout);
 }
 
 static void response_version(const struct request_context *req)
