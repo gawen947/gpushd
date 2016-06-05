@@ -294,7 +294,7 @@ static void send_response(const struct request_context *req, int code, const voi
   ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
   if(ret < 0) {
     perror("server error: sendto()");
-    exit(EXIT_FAILURE);
+    return;
   }
 
   stats.nb_sent++;
