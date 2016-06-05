@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #define UNUSED(x) (void)(x)
+#define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
 
 #define BUFFER_SIZE 8092
 

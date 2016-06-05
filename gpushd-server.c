@@ -51,8 +51,10 @@ enum s_magic {
 /* various statistics */
 static struct gpushd_stats stats;
 
-/* path to a swap file for the stack and statistics */
+/* path to a swap file for the stack and statistics
+   and the unix socket used for the server */
 static const char *swap_path;
+static const char *socket_path;
 
 /* it is possible to return a default element when the stack is empty */
 static unsigned int empty_len;
@@ -271,11 +273,15 @@ static void sig_swap(int signum)
 static void sig_term(int signum)
 {
   UNUSED(signum);
-
-  swap_save();
   exit(0);
 }
 
+static void exit_clean(void)
+{
+  printf("exiting...\n");
+  unlink(socket_path);
+  swap_save();
+}
 
 static void send_response(const struct request_context *req, int code, const void *data, int len)
 {
@@ -493,7 +499,7 @@ static void parse(const char *buf, int len, int fd)
   }
 
   /* check that the message code is valid */
-  if(message->code > sizeof(request)) {
+  if(message->code > sizeof_array(request)) {
     send_error(&context, error_code(PARSING, CODE));
     return;
   }
@@ -527,8 +533,12 @@ static void server(const char *socket_path, int sync)
   sd = xsocket(AF_UNIX, SOCK_STREAM, 0);
 
   /* bind to the specified unix socket */
+  unlink(socket_path);
   xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
   xbind(sd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
+
+  /* now we may register the exit function */
+  atexit(exit_clean);
 
   /* listen and backlog up to four connections */
   xlisten(sd, 4);
@@ -594,10 +604,10 @@ static void setup_signals(void)
   struct sigaction act_swap = { .sa_handler = sig_swap, .sa_flags = 0 };
   struct sigaction act_term = { .sa_handler = sig_term, .sa_flags = 0 };
 
+  /* FIXME: Do we need all those signals? */
   int signals_term[] = {
     SIGHUP,
     SIGINT,
-    SIGKILL,
     SIGPIPE,
     SIGALRM,
     SIGTERM };
@@ -606,14 +616,13 @@ static void setup_signals(void)
     SIGUSR1,
     SIGUSR2 };
 
-  setup_siglist(signals_term, &act_term, sizeof(signals_term));
-  setup_siglist(signals_swap, &act_swap, sizeof(signals_swap));
+  setup_siglist(signals_term, &act_term, sizeof_array(signals_term));
+  setup_siglist(signals_swap, &act_swap, sizeof_array(signals_swap));
 }
 
 int main(int argc, char *argv[])
 {
   const char *prog_name;
-  const char *socket_path;
   int exit_status = EXIT_FAILURE;
   int sync_ttl    = 0;
 
