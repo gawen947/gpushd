@@ -31,6 +31,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 #include <err.h>
 
 #include "gpushd-common.h"
@@ -290,7 +291,7 @@ static void send_response(const struct request_context *req, int code, const voi
     memcpy(message->data, data, len);
 
   /* send the message */
-  ret = sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
+  ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
   if(ret < 0) {
     perror("server error: sendto()");
     exit(EXIT_FAILURE);
@@ -456,8 +457,7 @@ static void request_extver(const struct request_context *req)
   send_response(req, GPUSHD_RES_END, NULL, 0);
 }
 
-static void parse(const char *buf, int len,
-                  int socket, struct sockaddr *s_addr, socklen_t addrlen)
+static void parse(const char *buf, int len, int fd)
 {
   /* this list must follow the order of the request message
      definition in the common header. we use the message code value
@@ -482,9 +482,7 @@ static void parse(const char *buf, int len,
   context.data        = message->data;
   context.request_id  = message->id;
   context.len         = len;
-  context.s_addr      = s_addr;
-  context.s_addrlen   = addrlen;
-  context.socket      = socket;
+  context.fd          = fd;
 
   /* check the length of the header */
   if(len < 0) {
@@ -524,29 +522,38 @@ static void server(const char *socket_path, int sync)
 
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
   int sd;
-  socklen_t addrlen;
 
   /* socket creation */
-  sd = xsocket(AF_UNIX, SOCK_DGRAM, 0);
+  sd = xsocket(AF_UNIX, SOCK_STREAM, 0);
 
   /* bind to the specified unix socket */
   xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
-  addrlen = SUN_LEN(&s_addr);
-  xbind(sd, (struct sockaddr *)&s_addr, addrlen);
+  xbind(sd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
+
+  /* listen and backlog up to four connections */
+  xlisten(sd, 4);
 
   while(1) {
     struct timespec begin, end;
     char buf[BUFFER_SIZE];
     int n;
 
+    /* accept a new connection */
+    int fd = accept(sd, NULL, NULL);
+    if(fd < 0) {
+      if(errno == EINTR)
+        continue;
+      err(EXIT_FAILURE, "accept()"); /* FIXME: use standard error message format (see client) */
+    }
+
     /* read the message */
-    n = recvfrom(sd, buf, BUFFER_SIZE, 0, NULL, NULL);
+    n = recv(fd, buf, BUFFER_SIZE, 0);
     if(n < 0)
-      err(EXIT_FAILURE, "network error");
+      err(EXIT_FAILURE, "network error"); /* FIXME: use standard error message */
 
     /* parse and compute parsing time */
     clock_gettime(CLOCK_MONOTONIC, &begin);
-    parse(buf, n, sd, (struct sockaddr *)&s_addr, addrlen);
+    parse(buf, n, fd);
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     /* statistics */

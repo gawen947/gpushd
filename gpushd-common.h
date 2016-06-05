@@ -111,14 +111,11 @@ struct gpushd_message {
 };
 
 struct request_context {
-  const void *data;
-  int len;
+  uint32_t request_id; /* request ID */
+  const void *data;    /* message data */
+  int len;             /* data length */
 
-  struct sockaddr *s_addr;
-  socklen_t s_addrlen;
-  uint32_t request_id;
-
-  int socket;
+  int fd; /* file descriptor of the connection */
 };
 
 #endif /* _GPUSHD_COMMON_H_ */

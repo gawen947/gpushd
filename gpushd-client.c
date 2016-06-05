@@ -285,7 +285,7 @@ static int response(int waiting, struct request_context *req)
   int n;
 
   /* FIXME: use setsockopt() for timeout ? */
-  n = recvfrom(req->socket, buffer, BUFFER_SIZE, 0, NULL, NULL);
+  n = recv(req->fd, buffer, BUFFER_SIZE, 0);
   if(n < 0)
     err(EXIT_FAILURE, "network error");
 
@@ -413,7 +413,7 @@ static int send_request(const struct request_context *req, const char *command, 
   }
 
   /* FIXME: use a separate function for sending. */
-  ret = sendto(req->socket, message, sizeof(struct gpushd_message) + len, 0, req->s_addr, req->s_addrlen);
+  ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
   if(ret < 0) {
     perror("client error: sendto()");
     exit(EXIT_FAILURE);
@@ -435,19 +435,18 @@ static void client(const char *socket_path, const char *command, const char *arg
   sigaction(SIGALRM, &act_timeout, NULL);
   alarm(REQUEST_TIMEOUT);
 
-  /* socket creation  */
-  xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
-
   /* socket creation */
-  request.socket    = xsocket(AF_UNIX, SOCK_DGRAM, 0);
-  request.s_addr    = (struct sockaddr *)&s_addr;
-  request.s_addrlen = SUN_LEN(&s_addr);
+  xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
+  request.fd = xsocket(AF_UNIX, SOCK_STREAM, 0);
+
+  /* connect to server */
+  xconnect(request.fd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
 
   /* assemble the rest of the request context */
   request.request_id = getpid();
 
+  /* send request and wait for responses */
   waiting = send_request(&request, command, argument);
-
   while(waiting)
     waiting = response(waiting, &request);
 }
