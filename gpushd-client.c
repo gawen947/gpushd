@@ -198,7 +198,7 @@ static void response_info(const struct request_context *req)
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
   push_aligned_display("Number of error", strdup(buffer), NULL);
 
-  for(i = (sizeof(stats->nb_messages) - 1) ; i >= 0 ; i--) {
+  for(i = (sizeof_array(stats->nb_messages) - 1) ; i >= 0 ; i--) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_messages[i]);
     push_aligned_display(message_names[i], strdup(buffer), NULL);
   }
