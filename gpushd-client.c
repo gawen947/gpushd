@@ -63,13 +63,24 @@ static char *error_minor[] = {
   "invalid request code"
 };
 
-static char *message_names[] = {
-  "Error message",
-  "Field message",
-  "Item message",
-  "Info message",
-  "Version message",
-  "End message"
+static char *response_names[] = {
+  "Error response",
+  "Field response",
+  "Item response",
+  "Info response",
+  "Version response",
+  "End response"
+};
+
+static char *request_names[] = {
+  "Push request",
+  "Pop request",
+  "Get request",
+  "List request",
+  "Info request",
+  "Clean request",
+  "Version request",
+  "Extended version request"
 };
 
 static struct aligned_row {
@@ -199,8 +210,19 @@ static void response_info(const struct request_context *req)
   push_aligned_display(NULL, NULL, NULL);
 
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_server);
-  push_aligned_display("Server started", strdup(buffer), NULL);
+  for(i = (sizeof_array(stats->nb_requests) - 1) ; i >= 0 ; i--) {
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_requests[i]);
+    push_aligned_display(request_names[i], strdup(buffer), NULL);
+  }
+
+
+  push_aligned_display(NULL, NULL, NULL);
+
+
+  for(i = (sizeof_array(stats->nb_responses) - 1) ; i >= 0 ; i--) {
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_responses[i]);
+    push_aligned_display(response_names[i], strdup(buffer), NULL);
+  }
 
 
   push_aligned_display(NULL, NULL, NULL);
@@ -209,13 +231,11 @@ static void response_info(const struct request_context *req)
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
   push_aligned_display("Number of error", strdup(buffer), NULL);
 
-  for(i = (sizeof_array(stats->nb_messages) - 1) ; i >= 0 ; i--) {
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_messages[i]);
-    push_aligned_display(message_names[i], strdup(buffer), NULL);
-  }
-
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
   push_aligned_display("Messages sent", strdup(buffer), NULL);
+
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_server);
+  push_aligned_display("Server started", strdup(buffer), NULL);
 
 
   commit_aligned_display();

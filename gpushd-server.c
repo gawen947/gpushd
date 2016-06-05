@@ -303,6 +303,7 @@ static void send_response(const struct request_context *req, int code, const voi
     return;
   }
 
+  stats.nb_responses[code]++;
   stats.nb_sent++;
 }
 
@@ -509,7 +510,7 @@ static void parse(const char *buf, int len, int fd)
 
   /* parse the message according to the message code.
      note that we don't use any condition to do that. */
-  stats.nb_messages[message->code]++;
+  stats.nb_requests[message->code]++;
   request[message->code](&context);
 }
 

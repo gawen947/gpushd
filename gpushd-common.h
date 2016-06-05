@@ -32,8 +32,8 @@
 
 #define BUFFER_SIZE 8092
 
-#define MAX_REQ_CODE GPUSHD_RES_END
-#define MAX_RES_CODE GPUSHD_REQ_EXTVER
+#define MAX_RES_CODE GPUSHD_RES_END
+#define MAX_REQ_CODE GPUSHD_REQ_EXTVER
 #define MAX_STACK        (uint16_t)-1
 
 enum {
@@ -71,7 +71,8 @@ enum {
 struct gpushd_stats {
   /* number of messages sent */
   unsigned long nb_sent;
-  unsigned long nb_messages[MAX_REQ_CODE];
+  unsigned long nb_requests[MAX_REQ_CODE];
+  unsigned long nb_responses[MAX_RES_CODE];
 
   /* number of error */
   unsigned long nb_error;
