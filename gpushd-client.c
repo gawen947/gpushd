@@ -268,6 +268,9 @@ static void response_error(const struct request_context *req)
   }
 
   fprintf(stderr, "%s: %s\n", error_major[error->major], error_minor[error->minor]);
+
+  /* response error must abort */
+  exit(EXIT_FAILURE);
 }
 
 static int parse(struct gpushd_message *message, size_t *len, int *left, int waiting, struct request_context *req)
