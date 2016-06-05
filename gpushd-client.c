@@ -276,13 +276,14 @@ static void response_field(const struct request_context *req)
   const char *name  = req->data + 1;
   const char *value = name + name_len;
 
+  /* FIXME: Use push aligned display(), but we need a way to free
+            the description on exit... */
   memcpy(out, name, name_len);               out += name_len;
-  memcpy(out, separator, sizeof(separator)); out += sizeof(separator);
+  memcpy(out, separator, sizeof(separator)); out += sizeof(separator) - 1;
   memcpy(out, value, value_len);             out += value_len;
-  *out++ = '\n';
   *out   = '\0';
 
-  puts(out);
+  puts(output);
 }
 
 static void response_error(const struct request_context *req)

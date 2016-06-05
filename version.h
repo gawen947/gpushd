@@ -25,7 +25,8 @@
 #ifndef _VERSION_H_
 #define _VERSION_H_
 
-#define stringify(s) #s
+#define _stringify(s) #s
+#define stringify(s) _stringify(s)
 
 #define PACKAGE "GPushD"
 #define GPUSHD_AUTHOR  "David Hauweele"
@@ -37,7 +38,7 @@
 #define GPUSHD_MINOR_VERSION    0
 #define GPUSHD_PROTOCOL_VERSION 3
 
-#define VERSION stringify(GPUSHD_MAJOR_VERSION) "." stringify(GPUSHD_MIINOR_VERSION)
+#define VERSION stringify(GPUSHD_MAJOR_VERSION) "." stringify(GPUSHD_MINOR_VERSION)
 
 #if !(defined COMMIT && defined PARTIAL_COMMIT)
 # define PACKAGE_VERSION PACKAGE " v" VERSION
