@@ -608,8 +608,6 @@ static void setup_signals(void)
   int signals_term[] = {
     SIGHUP,
     SIGINT,
-    SIGPIPE,
-    SIGALRM,
     SIGTERM };
 
   int signals_swap[] = {
