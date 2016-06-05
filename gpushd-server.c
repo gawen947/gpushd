@@ -76,14 +76,14 @@ static int timespec_substract(struct timespec *result, struct timespec *x, struc
 {
   /* Perform the carry for the later subraction by updating y. */
   if (x->tv_nsec < y->tv_nsec) {
-    int nsec = (y->tv_nsec - x->tv_nsec) / NSEC + 1;
-    y->tv_nsec -= NSEC * nsec;
-    y->tv_sec  += nsec;
+    int sec = (y->tv_nsec - x->tv_nsec) / NSEC + 1;
+    y->tv_nsec -= NSEC * sec;
+    y->tv_sec  += sec;
   }
   if (x->tv_nsec - y->tv_nsec > NSEC) {
-    int nsec = (x->tv_nsec - y->tv_nsec) / NSEC;
-    y->tv_nsec += 1000000000 * nsec;
-    y->tv_sec  -= nsec;
+    int sec = (x->tv_nsec - y->tv_nsec) / NSEC;
+    y->tv_nsec += NSEC * sec;
+    y->tv_sec  -= sec;
   }
 
   /* Compute the time remaining to wait.
@@ -101,7 +101,7 @@ static uint64_t substract_nsec(struct timespec *begin, struct timespec *end)
   uint64_t diff_nsec;
 
   /* Substract first and check that everything goes correctly. */
-  int n = timespec_substract(&diff, begin, end);
+  int n = timespec_substract(&diff, end, begin);
   assert(!n);
 
   diff_nsec = diff.tv_sec * NSEC + diff.tv_nsec;
