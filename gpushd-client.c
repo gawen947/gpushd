@@ -231,7 +231,7 @@ static void response_info(const struct request_context *req)
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
   push_aligned_display("Number of error", strdup(buffer), NULL);
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_sent);
   push_aligned_display("Messages sent", strdup(buffer), NULL);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_server);
