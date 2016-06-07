@@ -41,7 +41,7 @@
 #include "help.h"
 #include "safe-call.h"
 
-#define GPUSHD_SWAP_VERSION 4
+#define GPUSHD_SWAP_VERSION 3
 
 enum s_magic {
   GPUSHD_SWAP_MAGIK1  = 0x48535047, /* GPSH */
@@ -201,17 +201,16 @@ static void swap_load_3(iofile_t file)
     uint16_t len;
     struct gpushd_item *item;
 
-    xxiobuf_read(file, &len, sizeof(uint16_t));
+    /* Read a new item. If there is no more items the file ends here. */
+    n = xiobuf_read(file, &len, sizeof(uint16_t));
+    if(n == 0)
+      return;
 
     /* allocate and read the item */
     item     = xmalloc(sizeof(struct gpushd_item) + len);
     item->len = len;
 
-    n = xiobuf_read(file, &item->string, len);
-    if(n == 0)
-      return;
-    else if(n < 0 || n != len)
-      err(EXIT_FAILURE, "iobuf_read");
+    xxiobuf_read(file, &item->string, len);
 
     /* push to stack */
     push_to_stack(item);
