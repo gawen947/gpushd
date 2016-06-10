@@ -121,7 +121,6 @@ struct gpushd_message {
 struct request_context {
   const void *data;    /* message data */
   int len;             /* data length */
-  int waiting;         /* waiting for more message */
 
   int fd;          /* file descriptor of the connection */
   iofile_t stream; /* buffered connection */
