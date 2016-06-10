@@ -98,6 +98,10 @@ struct gpushd_stats {
   /* information about the stack */
   unsigned int stack_size;
   unsigned int max_stack;
+
+  /* information about the memory used */
+  uint64_t stack_mem;
+  uint64_t max_mem;
 };
 
 struct gpushd_version {

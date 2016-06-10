@@ -201,6 +201,16 @@ static void response_info(const struct request_context *req)
   char buffer[DISPLAY_VALUE_BUFFER];
   int i;
 
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->max_mem);
+  push_aligned_display("Maximum memory", strdup(buffer), "B");
+
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->stack_mem);
+  push_aligned_display("Stack memory", strdup(buffer), "B");
+
+
+  push_aligned_display(NULL, NULL, NULL);
+
+
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->max_stack);
   push_aligned_display("Maximum stack size", strdup(buffer), NULL);
 

@@ -75,6 +75,8 @@ static struct gpushd_item {
 
 #define send_end() send_response(req, GPUSHD_RES_END, NULL, 0)
 
+#define entry_size(entry) sizeof(struct gpushd_item) + entry->len
+
 #define NSEC 1000000000
 
 static int timespec_substract(struct timespec *result, struct timespec *x, struct timespec *y)
@@ -158,8 +160,11 @@ static void push_to_stack(struct gpushd_item *item)
 
   /* update statistics */
   stats.stack_size++;
+  stats.stack_mem += entry_size(stack);
   if(stats.stack_size > stats.max_stack)
     stats.max_stack = stats.stack_size;
+  if(stats.stack_mem > stats.max_mem)
+    stats.max_mem = stats.stack_mem;
 }
 
 static void swap_save(void)
@@ -197,7 +202,10 @@ static void swap_load_3(iofile_t file)
   uint16_t i;
   ssize_t n;
 
+  /* Load the statistics we also have to reset some fields. */
   xxiobuf_read(file, &stats, sizeof(struct gpushd_stats));
+  stats.stack_size = 0;
+  stats.stack_mem  = 0;
 
   for(i = 0 ; i < MAX_STACK ; i++) {
     uint16_t len;
@@ -401,11 +409,12 @@ static void request_pop(const struct request_context *req)
 
   /* pop the item */
   if(stack) {
+    stats.stack_size--;
+    stats.stack_mem -= entry_size(stack);
+
     o     = stack;
     stack = stack->next;
     free(o);
-
-    stats.stack_size--;
   }
 }
 
@@ -425,6 +434,7 @@ static void request_clean(const struct request_context *req)
 
   stack = NULL;
   stats.stack_size = 0;
+  stats.stack_mem  = 0;
 
   send_end();
 }
