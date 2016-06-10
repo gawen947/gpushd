@@ -49,7 +49,9 @@ enum s_magic {
 };
 
 /* various statistics */
-static struct gpushd_stats stats = { .min_nsec = UINT64_MAX };
+static struct gpushd_stats stats = { .min_nsec    = UINT64_MAX,
+                                     .entry_limit = DEFAULT_STACK_LIMIT,
+                                     .mem_limit   = DEFAULT_MEM_LIMIT };
 
 /* path to a swap file for the stack and statistics
    and the unix socket used for the server */
@@ -59,10 +61,6 @@ static const char *socket_path;
 /* it is possible to return a default element when the stack is empty */
 static unsigned int empty_len;
 static const char *empty_item;
-
-/* stack limit */
-static unsigned int stack_entry_limit = DEFAULT_STACK_LIMIT;
-static uint64_t     stack_mem_limit   = DEFAULT_MEM_LIMIT;
 
 /* the stack contains the items */
 static struct gpushd_item {
@@ -211,7 +209,15 @@ static void swap_load_3(iofile_t file)
   stats.stack_size = 0;
   stats.stack_mem  = 0;
 
-  for(i = 0 ; i < stack_entry_limit ; i++) {
+  /* No limit (0) is actually the maximum.
+     That is ~4G entries and ~16 EiB.
+     I'm sure it will be enough... */
+  if(stats.entry_limit == 0)
+    stats.entry_limit = -1;
+  if(stats.mem_limit == 0)
+    stats.mem_limit = -1;
+
+  for(i = 0 ; i < stats.entry_limit ; i++) {
     uint16_t len;
     struct gpushd_item *item;
 
@@ -230,7 +236,7 @@ static void swap_load_3(iofile_t file)
     push_to_stack(item);
 
     /* check memory limit */
-    if(stats.stack_mem > stack_mem_limit)
+    if(stats.stack_mem > stats.mem_limit)
       break;
   }
 
@@ -357,8 +363,8 @@ static void request_push(const struct request_context *req)
   struct gpushd_item *item;
 
   /* check that the stack isn't full */
-  if(stats.stack_size >= stack_entry_limit ||
-     stats.stack_mem  >= stack_mem_limit) {
+  if(stats.stack_size >= stats.entry_limit ||
+     stats.stack_mem  >= stats.mem_limit) {
     send_error(req, error_code(STACK, FULL));
     return;
   }
@@ -659,6 +665,8 @@ static void setup_signals(void)
 int main(int argc, char *argv[])
 {
   const char *prog_name;
+  unsigned int entry_limit = 0;
+  uint64_t     mem_limit = 0;
   int exit_status = EXIT_FAILURE;
   int sync_ttl    = 0;
 
@@ -691,10 +699,16 @@ int main(int argc, char *argv[])
       empty_len  = strlen(optarg);
       break;
     case('S'):
-      stack_entry_limit = atoi(optarg);
+      entry_limit = atoi(optarg);
+
+      if(entry_limit == 0)
+        entry_limit = -1;
       break;
     case('M'):
-      stack_mem_limit = atoi(optarg);
+      mem_limit = atoi(optarg);
+
+      if(mem_limit == 0)
+        mem_limit = -1;
       break;
     case('V'):
       print_version(prog_name);
@@ -724,13 +738,11 @@ int main(int argc, char *argv[])
 
   setup_signals();
 
-  /* No limit is actually the maximum.
-     That is ~4G entries and ~16 EiB.
-     I'm sure it will be enough... */
-  if(stack_entry_limit == 0)
-    stack_entry_limit = -1;
-  if(stack_mem_limit == 0)
-    stack_mem_limit = -1;
+  /* command line limits override swap */
+  if(entry_limit)
+    stats.entry_limit = entry_limit;
+  if(mem_limit)
+    stats.mem_limit = mem_limit;
 
   server(socket_path, sync_ttl);
   /* never return */

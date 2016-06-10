@@ -207,6 +207,9 @@ static void response_info(const struct request_context *req)
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->stack_mem);
   push_aligned_display("Stack memory", strdup(buffer), "B");
 
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->mem_limit);
+  push_aligned_display("Memory limit", strdup(buffer), "B");
+
 
   push_aligned_display(NULL, NULL, NULL);
 
@@ -216,6 +219,9 @@ static void response_info(const struct request_context *req)
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->stack_size);
   push_aligned_display("Stack size", strdup(buffer), NULL);
+
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->entry_limit);
+  push_aligned_display("Stack limit", strdup(buffer), NULL);
 
 
   push_aligned_display(NULL, NULL, NULL);

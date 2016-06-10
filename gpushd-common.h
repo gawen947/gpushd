@@ -96,6 +96,10 @@ struct gpushd_stats {
   uint64_t min_nsec;
   uint64_t sum_nsec;
 
+  /* stack limit */
+  unsigned int entry_limit;
+  uint64_t     mem_limit;
+
   /* information about the stack */
   unsigned int stack_size;
   unsigned int max_stack;
