@@ -93,7 +93,30 @@ static struct aligned_row {
   const struct aligned_row *next;
 } *aligned_display;
 
-int aligned_max_len = 0;
+static int aligned_max_len = 0;
+
+/* The states of the parser. */
+static int parse_st_header(void);
+static int parse_st_data(void);
+
+/* Current state of the parser. */
+static int (*parse_state_end)(void);
+
+/* The message is assembled in this buffer. */
+static char message_buffer[MAX_MESSAGE_LEN];
+static struct gpushd_message *message = (struct gpushd_message *)message_buffer;
+
+/* Data left to parse and pointer. */
+static int   data_left;
+static void *data_ptr;
+
+/* Function to call when a message has been fully parsed.
+   Along with a data pointer to pass to the function. */
+static int (*message_parsed)(const struct gpushd_message *, void *);
+static void *message_parsed_data;
+
+/* Flag indicating the next message expected for the parser. */
+static int waiting;
 
 static void sig_timeout(int signum)
 {
@@ -303,8 +326,73 @@ static void response_error(const struct request_context *req)
   exit(EXIT_FAILURE);
 }
 
-static int parse(struct gpushd_message *message, size_t *len, int *left, int waiting, struct request_context *req)
+static int parse_st_header(void)
 {
+  data_left       = message->len;
+  parse_state_end = parse_st_data;
+
+  return 1;
+}
+
+static int parse_st_data(void)
+{
+  /* Message parsed we re-init */
+  data_left       = sizeof(struct gpushd_message);
+  data_ptr        = message_buffer;
+  parse_state_end = parse_st_header;
+
+  return message_parsed(message, message_parsed_data);
+}
+
+static void parse_init(int (*parsed)(const struct gpushd_message *message, void *data),
+                       void *data)
+{
+  message_parsed      = parsed;
+  message_parsed_data = data;
+
+  data_left = sizeof(struct gpushd_message);
+  data_ptr  = message_buffer;
+
+  parse_state_end = parse_st_header;
+}
+
+static int parse(const void *chunk, int size)
+{
+  int more = 1;
+  const void *chunk_ptr = chunk;
+
+  /* size | more
+     0      0    => return no-more
+     0      1    => return need-more
+     1      0    => pending error
+     1      1    => while
+  */
+  while(size) {
+    /* How much should we copy? */
+    int copy = data_left < size ? data_left : size;
+
+    if(!more) /* the parsing completed but there are data pending */
+      errx(EXIT_FAILURE, "invalid or pending response");
+
+    memcpy(data_ptr, chunk_ptr, copy);
+
+    /* Update pointers */
+    data_ptr  += copy;
+    chunk_ptr += copy;
+    size      -= copy;
+    data_left -= copy;
+
+    if(data_left == 0)
+      more = parse_state_end();
+  }
+
+  return more;
+}
+
+static int parsed(const struct gpushd_message *message, void *data)
+{
+  struct request_context *req = (struct request_context *)data;
+
   /* this list must follow the order of the response message
      definition in the common header. we use the message code value
      to index the correct parsing function. */
@@ -316,14 +404,8 @@ static int parse(struct gpushd_message *message, size_t *len, int *left, int wai
     response_version,
     NULL /* end is captured earlier */ };
 
-  *len = sizeof(struct gpushd_message) + message->len;
-
-  /* not enough bytes in buffer */
-  *left -= *len;
-  if(*left < 0)
-    return 0;
-
   /* update request context */
+  /* FIXME: put the message directly */
   req->data = message->data;
   req->len  = message->len;
 
@@ -354,46 +436,36 @@ static int parse(struct gpushd_message *message, size_t *len, int *left, int wai
     return 0;
 }
 
-static int response(int waiting, struct request_context *req)
+static void response(struct request_context *req)
 {
-  static char buffer[BUFFER_SIZE];
-  void *msg_ptr = buffer;
-  int n;
+  static char receive_buffer[RECEIVE_BUFFER_SIZE];
+  int n, more = 1;
 
-  /* FIXME: use setsockopt() for timeout ? */
-  /* FIXME: what if we receive multiple message at once that fall outside the buffer? */
-  n = recv(req->fd, buffer, BUFFER_SIZE, 0);
-  if(n < 0)
-    err(EXIT_FAILURE, "network error");
+  parse_init(parsed, req);
 
-  /* The messages are passed on a stream unix socket.
-     So we make the assumption that we always receive
-     complete messages. At worst we receive multiple
-     messages in one time.
-     FIXME: Don't think it's true with signals. */
-  while(n) {
-    size_t len;
-
-    waiting = parse(msg_ptr, &len, &n, waiting, req);
-
-    /* We tried to parse a message that is longer than the buffer content. */
+  while(more) {
+    /* FIXME: use  setsockopt() for timeout ? */
+    n = recv(req->fd, receive_buffer, RECEIVE_BUFFER_SIZE, 0);
     if(n < 0)
-      errx(EXIT_FAILURE, "message falling short");
+      err(EXIT_FAILURE, "network error");
+    else if(n == 0)
+      errx(EXIT_FAILURE, "connection aborted");
 
-    /* Our request ended but there are messages left to parse. */
-    if(!waiting && n > 0)
-      errx(EXIT_FAILURE, "message pending after request");
-
-    /* Update message pointer */
-    msg_ptr += len;
+    /* The messages are passed on a stream unix socket.
+       However we might receive multiple messages at once
+       that fall out of the receive buffer. So we pass them
+       to a parsing function that will copy each message
+       one by one in a message buffer and then process them.
+       This function aborts the program in case of a parsing
+       error and return if there are more byte expected to
+       finish the messages. */
+    more = parse(receive_buffer, n);
   }
-
-  return waiting;
 }
 
 static int send_request(const struct request_context *req, const char *command, const char *argument)
 {
-  static char message_buffer[BUFFER_SIZE];
+  static char message_buffer[MAX_MESSAGE_LEN];
   struct gpushd_message *message = (struct gpushd_message *)message_buffer;
   unsigned int len = 0;
   int waiting = 0;
@@ -469,7 +541,7 @@ static int send_request(const struct request_context *req, const char *command, 
     /* The argument may be too long. */
     /* FIXME: We should check if argument is possible in the client. */
     /* FIXME: We should limit the length in the client. */
-    if(len >= (BUFFER_SIZE - sizeof(struct gpushd_message))) {
+    if(len >= MAX_DATA_LEN) {
       /* FIXME: use the dedicated error function */
       fprintf(stderr, "argument error: argument too long\n");
       exit(EXIT_FAILURE);
@@ -496,7 +568,6 @@ static void client(const char *socket_path, const char *command, const char *arg
   struct request_context request;
   struct sigaction act_timeout = { .sa_handler = sig_timeout, .sa_flags   = 0 };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
-  int waiting;
 
   /* limit request time */
   /* FIXME: use setsockopt() instead */
@@ -513,8 +584,10 @@ static void client(const char *socket_path, const char *command, const char *arg
 
   /* send request and wait for responses */
   waiting = send_request(&request, command, argument);
-  while(waiting)
-    waiting = response(waiting, &request);
+
+  /* We only parse the response when needed. */
+  if(waiting)
+    response(&request);
 }
 
 static void print_help(const char *name)

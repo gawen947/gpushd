@@ -284,7 +284,7 @@ static void exit_clean(void)
 
 static void send_response(const struct request_context *req, int code, const void *data, int len)
 {
-  static char message_buffer[BUFFER_SIZE];
+  static char message_buffer[MAX_MESSAGE_LEN];
   struct gpushd_message *message = (struct gpushd_message *)message_buffer;
   ssize_t ret;
 
@@ -548,7 +548,7 @@ static void server(const char *socket_path, int sync)
 
   while(1) {
     struct timespec begin, end;
-    char buf[BUFFER_SIZE];
+    char buf[MAX_MESSAGE_LEN];
     int n;
 
     /* accept a new connection */
@@ -560,7 +560,7 @@ static void server(const char *socket_path, int sync)
     }
 
     /* read the message */
-    n = recv(fd, buf, BUFFER_SIZE, 0);
+    n = recv(fd, buf, MAX_MESSAGE_LEN, 0);
     if(n < 0)
       err(EXIT_FAILURE, "network error"); /* FIXME: use standard error message */
 

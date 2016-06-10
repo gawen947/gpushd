@@ -30,7 +30,15 @@
 #define UNUSED(x) (void)(x)
 #define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
 
-#define BUFFER_SIZE 8092
+/* Maximum length of a single message. */
+#define MAX_MESSAGE_LEN UINT16_MAX + sizeof(struct gpushd_message)
+
+/* Maximum data length. */
+#define MAX_DATA_LEN    MAX_MESSAGE_LEN - sizeof(struct gpushd_message)
+
+/* Size of the receive buffer */
+/* FIXME: Should be equal to MAX_MESSAGE_LEN we use a smaller value just for testing. */
+#define RECEIVE_BUFFER_SIZE 4096
 
 #define MAX_RES_CODE GPUSHD_RES_END
 #define MAX_REQ_CODE GPUSHD_REQ_EXTVER
@@ -111,6 +119,7 @@ struct gpushd_message {
 struct request_context {
   const void *data;    /* message data */
   int len;             /* data length */
+  int waiting;         /* waiting for more message */
 
   int fd; /* file descriptor of the connection */
 };
