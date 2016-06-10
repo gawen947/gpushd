@@ -60,6 +60,10 @@ static const char *socket_path;
 static unsigned int empty_len;
 static const char *empty_item;
 
+/* stack limit */
+static unsigned int stack_entry_limit = DEFAULT_STACK_LIMIT;
+static uint64_t     stack_mem_limit   = DEFAULT_MEM_LIMIT;
+
 /* the stack contains the items */
 static struct gpushd_item {
   struct gpushd_item *next;
@@ -207,7 +211,7 @@ static void swap_load_3(iofile_t file)
   stats.stack_size = 0;
   stats.stack_mem  = 0;
 
-  for(i = 0 ; i < MAX_STACK ; i++) {
+  for(i = 0 ; i < stack_entry_limit ; i++) {
     uint16_t len;
     struct gpushd_item *item;
 
@@ -224,6 +228,10 @@ static void swap_load_3(iofile_t file)
 
     /* push to stack */
     push_to_stack(item);
+
+    /* check memory limit */
+    if(stats.stack_mem > stack_mem_limit)
+      break;
   }
 
   warnx("swap file too large for stack, remaining items not loaded");
@@ -349,7 +357,8 @@ static void request_push(const struct request_context *req)
   struct gpushd_item *item;
 
   /* check that the stack isn't full */
-  if(stats.stack_size >= MAX_STACK) {
+  if(stats.stack_size >= stack_entry_limit ||
+     stats.stack_mem  >= stack_mem_limit) {
     send_error(req, error_code(STACK, FULL));
     return;
   }
@@ -606,6 +615,8 @@ static void print_help(const char *name)
     { 'V', "version", "Show version information" },
     { 's', "sync",    "Sync after a number of request" },
     { 'd', "default", "Default value for an empty stack" },
+    { 'S', "size",    "Maximum stack size (use 0 for no limit, default: 65k)" },
+    { 'M', "memory",  "Maximum stack memory (use 0 for no limit, default: 128MB)" },
     { 0, NULL, NULL }
   };
 
@@ -656,13 +667,15 @@ int main(int argc, char *argv[])
     { "version", no_argument, NULL, 'V' },
     { "sync", required_argument, NULL, 's' },
     { "default", required_argument, NULL, 'd' },
+    { "size", required_argument, NULL, 'S' },
+    { "memory", required_argument, NULL, 'M' },
     { NULL, 0, NULL, 0 }
   };
 
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hVs:d:", opts, NULL);
+    int c = getopt_long(argc, argv, "hVs:d:S:M:", opts, NULL);
 
     if(c == -1)
       break;
@@ -676,6 +689,12 @@ int main(int argc, char *argv[])
     case('d'):
       empty_item = optarg;
       empty_len  = strlen(optarg);
+      break;
+    case('S'):
+      stack_entry_limit = atoi(optarg);
+      break;
+    case('M'):
+      stack_mem_limit = atoi(optarg);
       break;
     case('V'):
       print_version(prog_name);
@@ -704,6 +723,14 @@ int main(int argc, char *argv[])
   stats.nb_server++;
 
   setup_signals();
+
+  /* No limit is actually the maximum.
+     That is ~4G entries and ~16 EiB.
+     I'm sure it will be enough... */
+  if(stack_entry_limit == 0)
+    stack_entry_limit = -1;
+  if(stack_mem_limit == 0)
+    stack_mem_limit = -1;
 
   server(socket_path, sync_ttl);
   /* never return */

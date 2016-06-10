@@ -44,7 +44,8 @@
 
 #define MAX_RES_CODE GPUSHD_RES_END
 #define MAX_REQ_CODE GPUSHD_REQ_EXTVER
-#define MAX_STACK        (uint16_t)-1
+#define DEFAULT_STACK_LIMIT (uint16_t)-1
+#define DEFAULT_MEM_LIMIT   134217728 /* 128MB */
 
 enum {
   GPUSHD_RES_ERROR,
