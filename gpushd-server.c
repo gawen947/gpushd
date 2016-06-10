@@ -339,7 +339,7 @@ static void request_push(const struct request_context *req)
   struct gpushd_item *item;
 
   /* check that the stack isn't full */
-  if(stats.stack_size == MAX_STACK) {
+  if(stats.stack_size >= MAX_STACK) {
     send_error(req, error_code(STACK, FULL));
     return;
   }
