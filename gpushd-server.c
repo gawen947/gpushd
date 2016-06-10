@@ -296,7 +296,7 @@ static void send_response(const struct request_context *req, int code, const voi
     memcpy(message->data, data, len);
 
   /* send the message */
-  ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
+  ret = iobuf_write(req->stream, message, sizeof(struct gpushd_message) + len);
   if(ret < 0) {
     perror("server error: send()");
     return;
@@ -491,9 +491,9 @@ static void parse(const char *buf, int len, int fd)
   }
 
   /* assemble the request context */
-  context.data        = message->data;
-  context.len         = len;
-  context.fd          = fd;
+  context.data   = message->data;
+  context.len    = len;
+  context.stream = iobuf_dopen(fd);
 
   /* check the length of the header */
   if(len < 0) {
@@ -511,6 +511,9 @@ static void parse(const char *buf, int len, int fd)
      note that we don't use any condition to do that. */
   stats.nb_requests[message->code]++;
   request[message->code](&context);
+
+  /* close the context */
+  iobuf_close(context.stream);
 }
 
 static void report_request_time(struct timespec *begin, struct timespec *end)

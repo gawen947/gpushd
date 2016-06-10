@@ -27,6 +27,8 @@
 #include <sys/socket.h>
 #include <stdint.h>
 
+#include "iobuf.h"
+
 #define UNUSED(x) (void)(x)
 #define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -121,7 +123,8 @@ struct request_context {
   int len;             /* data length */
   int waiting;         /* waiting for more message */
 
-  int fd; /* file descriptor of the connection */
+  int fd;          /* file descriptor of the connection */
+  iofile_t stream; /* buffered connection */
 };
 
 #endif /* _GPUSHD_COMMON_H_ */
