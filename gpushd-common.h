@@ -38,7 +38,7 @@
 
 /* Size of the receive buffer */
 /* FIXME: Should be equal to MAX_MESSAGE_LEN we use a smaller value just for testing. */
-#define RECEIVE_BUFFER_SIZE 4096
+#define RECEIVE_BUFFER_SIZE MAX_MESSAGE_LEN
 
 #define MAX_RES_CODE GPUSHD_RES_END
 #define MAX_REQ_CODE GPUSHD_REQ_EXTVER

@@ -331,6 +331,11 @@ static int parse_st_header(void)
   data_left       = message->len;
   parse_state_end = parse_st_data;
 
+  /* If we don't need more data for this message
+     we skip the parsing so the parser don't hang. */
+  if(data_left == 0)
+    return parse_st_data();
+
   return 1;
 }
 
