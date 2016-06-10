@@ -101,6 +101,8 @@ ssize_t iobuf_write(iofile_t file, const void *buf, size_t count)
     ssize_t partial_write;
 
     partial_write = iobuf_flush(file);
+    if(partial_write < 0)
+      return partial_write;
 
     if(count > IOBUF_SIZE) {
       ssize_t full_write;
