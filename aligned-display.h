@@ -22,14 +22,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _ALIGNED_DISPLAY_H_
+#define _ALIGNED_DISPLAY_H_
 
-#include <stdio.h>
+void push_aligned_display(const char *description, const char *value, const char *unit);
+void commit_aligned_display(void);
 
-const char * basename(const char *s);
-void print_version(const char *name);
-void xstrcpy(char *dst, const char *src, size_t count);
-void xfree(void *ptr);
-
-#endif /* _COMMON_H_ */
+#endif /* _ALIGNED_DISPLAY_H_ */

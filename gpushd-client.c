@@ -35,6 +35,7 @@
 #include <err.h>
 #include <assert.h>
 
+#include "aligned-display.h"
 #include "gpushd-common.h"
 #include "safe-call.h"
 #include "common.h"
@@ -83,18 +84,6 @@ static char *request_names[] = {
   "Extended version request"
 };
 
-static struct aligned_row {
-  const char *description;
-  const char *value;
-  const char *unit;
-
-  unsigned int len; /* description length */
-
-  const struct aligned_row *next;
-} *aligned_display;
-
-static int aligned_max_len = 0;
-
 /* The states of the parser. */
 static int parse_st_header(void);
 static int parse_st_data(void);
@@ -124,75 +113,6 @@ static void sig_timeout(int signum)
 
   fprintf(stderr, "server error: timeout\n");
   exit(EXIT_FAILURE);
-}
-
-static void xfree(void *ptr)
-{
-  if(ptr)
-    free(ptr);
-}
-
-static void push_aligned_display(const char *description, const char *value, const char *unit)
-{
-  struct aligned_row *row = xmalloc(sizeof(struct aligned_row));
-  int len = description ? strlen(description) : 0;
-
-  /* Push the new row on the list. */
-  *row = (struct aligned_row){ description, value, unit,
-                               len,
-                               aligned_display };
-  aligned_display = row;
-
-  /* Compute the maximum length for the description field. */
-  if(len > aligned_max_len)
-    aligned_max_len = len;
-}
-
-static void commit_aligned_display(void)
-{
-  const struct aligned_row *row;
-
-  /* We already computed the maximum and the length for each element.
-     So we pop them out and display to stdout. */
-  for(row = aligned_display ; row ; row = row->next) {
-    int size = row->len;
-
-    /* An empty description means an empty row. */
-    if(!row->description) {
-      fputc('\n', stdout);
-      continue;
-    }
-
-    fputs(row->description, stdout);
-
-    for(; size <= aligned_max_len ; size++)
-      fputc(' ', stdout);
-
-    if(row->value) {
-      fputs(": ", stdout);
-      fputs(row->value, stdout);
-    }
-
-    if(row->unit) {
-      fputc(' ', stdout);
-      fputs(row->unit, stdout);
-    }
-
-    fputc('\n', stdout);
-  }
-
-  /* Now we can free everything.
-     We also free the internal strings. */
-  row = aligned_display;
-  while(row) {
-    const struct aligned_row *r = row;
-    row = row->next;
-
-    /* We only free the value as the other
-       fields come from string literals. */
-    xfree((void *)r->value);
-    free((void *)r);
-  }
 }
 
 static void response_info(const struct request_context *req)

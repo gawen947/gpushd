@@ -49,3 +49,10 @@ void xstrcpy(char *dst, const char *src, size_t count)
     err(EXIT_FAILURE, "strcpy(%lu)", count);
   strcpy(dst, src);
 }
+
+void xfree(void *ptr)
+{
+  if(ptr)
+    free(ptr);
+}
+
