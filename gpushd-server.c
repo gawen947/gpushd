@@ -73,6 +73,8 @@ static struct gpushd_item {
   (struct gpushd_error){ .major = GPUSHD_ERROR_MAJOR_ ## maj,  \
                          .minor = GPUSHD_ERROR_MINOR_ ## min }
 
+#define send_end() send_response(req, GPUSHD_RES_END, NULL, 0)
+
 #define NSEC 1000000000
 
 static int timespec_substract(struct timespec *result, struct timespec *x, struct timespec *y)
@@ -351,6 +353,8 @@ static void request_push(const struct request_context *req)
 
   /* push to stack */
   push_to_stack(item);
+
+  send_end();
 }
 
 static void request_list(const struct request_context *req)
@@ -363,7 +367,7 @@ static void request_list(const struct request_context *req)
   if(empty_item)
     send_response(req, GPUSHD_RES_ITEM, empty_item, empty_len);
 
-  send_response(req, GPUSHD_RES_END, NULL, 0);
+  send_end();
 }
 
 static void request_get(const struct request_context *req)
@@ -421,6 +425,8 @@ static void request_clean(const struct request_context *req)
 
   stack = NULL;
   stats.stack_size = 0;
+
+  send_end();
 }
 
 static void request_info(const struct request_context *req)
@@ -460,7 +466,7 @@ static void request_extver(const struct request_context *req)
 
   for(e = extended_version_fields ; e->name ; e++)
     send_field(req, e->name, e->value);
-  send_response(req, GPUSHD_RES_END, NULL, 0);
+  send_end();
 }
 
 static void parse(const char *buf, int len, int fd)

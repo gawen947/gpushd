@@ -481,6 +481,8 @@ static int send_request(const struct request_context *req, const char *command, 
   /* FIXME: parse the command and argument in another function. */
   if(!strcmp(command, "push")) {
     message->code = GPUSHD_REQ_PUSH;
+    waiting     |= WAITING_ACCEPT_END;
+
     argument_required = 1;
   }
   else if(!strcmp(command, "pop")) {
@@ -500,8 +502,10 @@ static int send_request(const struct request_context *req, const char *command, 
     message->code = GPUSHD_REQ_INFO;
     waiting      = GPUSHD_RES_INFO;
   }
-  else if(!strcmp(command, "clean"))
+  else if(!strcmp(command, "clean")) {
     message->code = GPUSHD_REQ_CLEAN;
+    waiting     |= WAITING_ACCEPT_END;
+  }
   else if(!strcmp(command, "version")) {
     message->code = GPUSHD_REQ_VERSION;
     waiting      = GPUSHD_RES_VERSION;
@@ -529,6 +533,10 @@ static int send_request(const struct request_context *req, const char *command, 
 
     exit(EXIT_FAILURE);
   }
+
+  /* All requests must have a reponse
+     or at least expect an end message. */
+  assert(waiting);
 
   /* FIXME: this check should be done before we create the connection */
   if(!argument && argument_required) {
