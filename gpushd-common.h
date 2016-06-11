@@ -23,6 +23,7 @@
  */
 
 #ifndef _GPUSHD_COMMON_H_
+#define _GPUSHD_COMMON_H_
 
 #include <sys/socket.h>
 #include <stdint.h>
