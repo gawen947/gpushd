@@ -35,6 +35,7 @@
 #include <err.h>
 
 #include "gpushd-common.h"
+#include "time-substract.h"
 #include "common.h"
 #include "version.h"
 #include "iobuf.h"
@@ -78,45 +79,6 @@ static struct gpushd_item {
 #define send_end() send_response(req, GPUSHD_RES_END, NULL, 0)
 
 #define entry_size(entry) sizeof(struct gpushd_item) + entry->len
-
-#define NSEC 1000000000
-
-static int timespec_substract(struct timespec *result, struct timespec *x, struct timespec *y)
-{
-  /* Perform the carry for the later subraction by updating y. */
-  if (x->tv_nsec < y->tv_nsec) {
-    int sec = (y->tv_nsec - x->tv_nsec) / NSEC + 1;
-    y->tv_nsec -= NSEC * sec;
-    y->tv_sec  += sec;
-  }
-  if (x->tv_nsec - y->tv_nsec > NSEC) {
-    int sec = (x->tv_nsec - y->tv_nsec) / NSEC;
-    y->tv_nsec += NSEC * sec;
-    y->tv_sec  -= sec;
-  }
-
-  /* Compute the time remaining to wait.
-     tv_usec is certainly positive. */
-  result->tv_sec  = x->tv_sec - y->tv_sec;
-  result->tv_nsec = x->tv_nsec - y->tv_nsec;
-
-  /* Return 1 if result is negative. */
-  return x->tv_sec < y->tv_sec;
-}
-
-static uint64_t substract_nsec(struct timespec *begin, struct timespec *end)
-{
-  struct timespec diff;
-  uint64_t diff_nsec;
-
-  /* Substract first and check that everything goes correctly. */
-  int n = timespec_substract(&diff, end, begin);
-  assert(!n);
-
-  diff_nsec = diff.tv_sec * NSEC + diff.tv_nsec;
-
-  return diff_nsec;
-}
 
 /* xiobuf*  calls abort the program in case of an error.
    xxiobuf* calls abort the program in case of an inconsistent read/write. */
