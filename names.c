@@ -22,17 +22,67 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#include <stdlib.h>
 
-#include <stdio.h>
+#include "common.h"
+#include "names.h"
 
-#define UNUSED(x) (void)(x)
-#define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
+static const char *error_major[] = {
+  "stack error",
+  "request parsing error"
+};
 
-const char * basename(const char *s);
-void print_version(const char *name);
-void xstrcpy(char *dst, const char *src, size_t count);
-void xfree(void *ptr);
+static const char *error_minor[] = {
+  "stack is full",
+  "stack is empty",
+  "invalid header length",
+  "invalid request code"
+};
 
-#endif /* _COMMON_H_ */
+static const char *response_names[] = {
+  "Error response",
+  "Field response",
+  "Item response",
+  "Info response",
+  "Version response",
+  "End response"
+};
+
+static const char *request_names[] = {
+  "Push request",
+  "Pop request",
+  "Get request",
+  "List request",
+  "Info request",
+  "Clean request",
+  "Version request",
+  "Extended version request"
+};
+
+const char * get_error_major(uint16_t major)
+{
+  if(major > sizeof_array(error_major))
+    return NULL;
+  return error_major[major];
+}
+
+const char * get_error_minor(uint16_t minor)
+{
+  if(minor > sizeof_array(error_minor))
+    return NULL;
+  return error_minor[minor];
+}
+
+const char * get_response_name(uint8_t response)
+{
+  if(response > sizeof_array(response_names))
+    return NULL;
+  return response_names[response];
+}
+
+const char * get_request_name(uint8_t request)
+{
+  if(request > sizeof_array(request_names))
+    return NULL;
+  return request_names[request];
+}

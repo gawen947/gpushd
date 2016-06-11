@@ -22,17 +22,14 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _NAMES_H_
+#define _NAMES_H_
 
-#include <stdio.h>
+#include <stdint.h>
 
-#define UNUSED(x) (void)(x)
-#define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
+const char * get_error_major(uint16_t major);
+const char * get_error_minor(uint16_t minor);
+const char * get_response_name(uint8_t response);
+const char * get_request_name(uint8_t request);
 
-const char * basename(const char *s);
-void print_version(const char *name);
-void xstrcpy(char *dst, const char *src, size_t count);
-void xfree(void *ptr);
-
-#endif /* _COMMON_H_ */
+#endif /* _NAMES_H_ */

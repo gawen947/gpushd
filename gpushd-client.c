@@ -39,6 +39,7 @@
 #include "gpushd-common.h"
 #include "safe-call.h"
 #include "common.h"
+#include "names.h"
 #include "help.h"
 
 /* The first 7-bits of the waiting value represent
@@ -51,38 +52,6 @@
 #define REQUEST_TIMEOUT 1
 
 #define DISPLAY_VALUE_BUFFER UINT8_MAX
-
-static char *error_major[] = {
-  "stack error",
-  "request parsing error"
-};
-
-static char *error_minor[] = {
-  "stack is full",
-  "stack is empty",
-  "invalid header length",
-  "invalid request code"
-};
-
-static char *response_names[] = {
-  "Error response",
-  "Field response",
-  "Item response",
-  "Info response",
-  "Version response",
-  "End response"
-};
-
-static char *request_names[] = {
-  "Push request",
-  "Pop request",
-  "Get request",
-  "List request",
-  "Info request",
-  "Clean request",
-  "Version request",
-  "Extended version request"
-};
 
 /* The states of the parser. */
 static int parse_st_header(void);
@@ -171,7 +140,7 @@ static void response_info(const struct request_context *req)
 
   for(i = (sizeof_array(stats->nb_requests) - 1) ; i >= 0 ; i--) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_requests[i]);
-    push_aligned_display(request_names[i], strdup(buffer), NULL);
+    push_aligned_display(get_request_name(i), strdup(buffer), NULL);
   }
 
 
@@ -180,7 +149,7 @@ static void response_info(const struct request_context *req)
 
   for(i = (sizeof_array(stats->nb_responses) - 1) ; i >= 0 ; i--) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_responses[i]);
-    push_aligned_display(response_names[i], strdup(buffer), NULL);
+    push_aligned_display(get_response_name(i), strdup(buffer), NULL);
   }
 
 
@@ -248,15 +217,17 @@ static void response_field(const struct request_context *req)
 static void response_error(const struct request_context *req)
 {
   const struct gpushd_error *error = req->data;
+  const char *major_str = get_error_major(error->major);
+  const char *minor_str = get_error_minor(error->minor);
 
-  if(error->major > sizeof(error_major) || error->minor > sizeof(error_minor)) {
+  if(!major_str || !minor_str) {
     /* FIXME: We need a special error code for this
               and a function dedicated to displaying errors. */
     fprintf(stderr, "response parsing error: invalid error code\n");
     return;
   }
 
-  fprintf(stderr, "%s: %s\n", error_major[error->major], error_minor[error->minor]);
+  fprintf(stderr, "%s: %s\n", major_str, minor_str);
 
   /* response error must abort */
   exit(EXIT_FAILURE);

@@ -10,7 +10,7 @@ DEP  = $(SRC:.c=.d)
 TARGETS     = gpushd-server gpushd-client
 
 SERVER_OBJ = gpushd-server.o version.o help.o safe-call.o common.o iobuf.o
-CLIENT_OBJ = gpushd-client.o version.o help.o safe-call.o common.o aligned-display.o
+CLIENT_OBJ = gpushd-client.o version.o help.o safe-call.o common.o aligned-display.o names.o
 
 PREFIX  ?= /usr/local
 BIN     ?= /bin

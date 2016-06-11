@@ -29,9 +29,6 @@
 
 #include "iobuf.h"
 
-#define UNUSED(x) (void)(x)
-#define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
-
 /* Maximum length of a single message. */
 #define MAX_MESSAGE_LEN UINT16_MAX + sizeof(struct gpushd_message)
 
