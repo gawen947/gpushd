@@ -39,6 +39,7 @@
 #include "common.h"
 #include "version.h"
 #include "iobuf.h"
+#include "stack.h"
 #include "help.h"
 #include "safe-call.h"
 
@@ -63,22 +64,21 @@ static const char *socket_path;
 static unsigned int empty_len;
 static const char *empty_item;
 
-/* the stack contains the items */
-static struct gpushd_item {
-  struct gpushd_item *next;
-
-  int len;
-  char string[];
-} *stack;
-
-
 #define error_code(maj, min)                                   \
   (struct gpushd_error){ .major = GPUSHD_ERROR_MAJOR_ ## maj,  \
                          .minor = GPUSHD_ERROR_MINOR_ ## min }
 
 #define send_end() send_response(req, GPUSHD_RES_END, NULL, 0)
 
-#define entry_size(entry) sizeof(struct gpushd_item) + entry->len
+#define PUSH(data, len) update_stats_push(push(data, len))
+#define POP() update_stats_pop(pop())
+
+/* We use a single buffer for parsing messages.
+   FIXME: Check if other modules need to access
+          the buffer. At least the client does.
+          We might put this in a separate unit. */
+static char message_buffer[MAX_MESSAGE_LEN];
+static struct gpushd_message *message = (struct gpushd_message *)message_buffer;
 
 /* xiobuf*  calls abort the program in case of an error.
    xxiobuf* calls abort the program in case of an inconsistent read/write. */
@@ -116,24 +116,34 @@ static void xxiobuf_read(iofile_t file, void *buf, size_t count)
   }
 }
 
-/* Push an item to the stack but do not verify if we are at max size. */
-static void push_to_stack(struct gpushd_item *item)
+static void update_stats_push(size_t mem_used)
 {
-  item->next = stack;
-  stack     = item;
-
-  /* update statistics */
   stats.stack_size++;
-  stats.stack_mem += entry_size(stack);
+  stats.stack_mem += mem_used;
+
   if(stats.stack_size > stats.max_stack)
     stats.max_stack = stats.stack_size;
+
   if(stats.stack_mem > stats.max_mem)
     stats.max_mem = stats.stack_mem;
 }
 
+static void update_stats_pop(size_t mem_freed)
+{
+  stats.stack_size--;
+  stats.stack_mem -= mem_freed;
+}
+
+static void swap_save_item(const struct gpushd_item *item, void *data)
+{
+  iofile_t file = (iofile_t)data;
+
+  xxiobuf_write(file, &item->len, sizeof(uint16_t));
+  xxiobuf_write(file, &item->data, item->len);
+}
+
 static void swap_save(void)
 {
-  const struct gpushd_item *item;
   uint32_t magik1  = GPUSHD_SWAP_MAGIK1;
   uint32_t magik2  = GPUSHD_SWAP_MAGIK2;
   uint32_t version = GPUSHD_SWAP_VERSION;
@@ -145,18 +155,16 @@ static void swap_save(void)
     return;
   }
 
+  /* swap header */
   xxiobuf_write(file, &magik1,  sizeof(uint32_t));
   xxiobuf_write(file, &magik2,  sizeof(uint32_t));
   xxiobuf_write(file, &version, sizeof(uint32_t));
 
+  /* statistics */
   xxiobuf_write(file, &stats, sizeof(struct gpushd_stats));
 
-  for(item = stack ; item ; item = item->next) {
-    uint16_t item_len = item->len;
-
-    xxiobuf_write(file, &item_len, sizeof(uint16_t));
-    xxiobuf_write(file, &item->string, item_len);
-  }
+  /* write items */
+  walk(swap_save_item, file);
 
   xiobuf_close(file);
 }
@@ -180,22 +188,14 @@ static void swap_load_3(iofile_t file)
     stats.mem_limit = -1;
 
   for(i = 0 ; i < stats.entry_limit ; i++) {
-    uint16_t len;
-    struct gpushd_item *item;
-
     /* Read a new item. If there is no more items the file ends here. */
-    n = xiobuf_read(file, &len, sizeof(uint16_t));
+    n = xiobuf_read(file, &message->len, sizeof(message->len));
     if(n == 0)
       return;
+    xxiobuf_read(file, &message->data, message->len);
 
-    /* allocate and read the item */
-    item     = xmalloc(sizeof(struct gpushd_item) + len);
-    item->len = len;
-
-    xxiobuf_read(file, &item->string, len);
-
-    /* push to stack */
-    push_to_stack(item);
+    /* Push and update statistics. */
+    PUSH(message->data, message->len);
 
     /* check memory limit */
     if(stats.stack_mem > stats.mem_limit)
@@ -321,9 +321,6 @@ static void send_field(const struct request_context *req, const char *name, cons
 
 static void request_push(const struct request_context *req)
 {
-  int len = req->len;
-  struct gpushd_item *item;
-
   /* check that the stack isn't full */
   if(stats.stack_size >= stats.entry_limit ||
      stats.stack_mem  >= stats.mem_limit) {
@@ -331,23 +328,22 @@ static void request_push(const struct request_context *req)
     return;
   }
 
-  /* allocate the item */
-  item      = xmalloc(sizeof(struct gpushd_item) + len);
-  item->len = len;
-  memcpy(item->string, req->data, len);
-
-  /* push to stack */
-  push_to_stack(item);
+  /* push and update statistics */
+  PUSH(req->data, req->len);
 
   send_end();
 }
 
+static void request_list_send_item(const struct gpushd_item *item, void *data)
+{
+  const struct request_context *req = data;
+
+  send_response(req, GPUSHD_RES_ITEM, item->data, item->len);
+}
+
 static void request_list(const struct request_context *req)
 {
-  const struct gpushd_item *item;
-
-  for(item = stack ; item ; item = item->next)
-    send_response(req, GPUSHD_RES_ITEM, item->string, item->len);
+  walk(request_list_send_item, (void *)req);
 
   if(empty_item)
     send_response(req, GPUSHD_RES_ITEM, empty_item, empty_len);
@@ -355,61 +351,51 @@ static void request_list(const struct request_context *req)
   send_end();
 }
 
-static void request_get(const struct request_context *req)
+/* Does the get request but return zero if the stack is empty. */
+static int request_get_helper(const struct request_context *req)
 {
   int len;
-  const char *string;
+  const char *data;
+  const struct gpushd_item *item = get();
 
-  /* manage the empty stack case */
-  if(!stack) {
+  /* manage empty stack case */
+  if(!item) {
     if(!empty_item) {
       send_error(req, error_code(STACK, EMPTY));
-      return;
+      return 0;
     }
 
-    string = empty_item;
-    len    = empty_len;
+    data = empty_item;
+    len  = empty_len;
   }
   else {
-    string = stack->string;
-    len    = stack->len;
+    data = item->data;
+    len  = item->len;
   }
 
-  send_response(req, GPUSHD_RES_ITEM, string, len);
+  send_response(req, GPUSHD_RES_ITEM, data, len);
+
+  return 1;
+}
+
+static void request_get(const struct request_context *req)
+{
+  (void)request_get_helper(req);
 }
 
 static void request_pop(const struct request_context *req)
 {
-  struct gpushd_item *o;
-
-  request_get(req);
-
-  /* pop the item */
-  if(stack) {
-    stats.stack_size--;
-    stats.stack_mem -= entry_size(stack);
-
-    o     = stack;
-    stack = stack->next;
-    free(o);
-  }
+  if(request_get_helper(req))
+    POP();
 }
 
 static void request_clean(const struct request_context *req)
 {
-  struct gpushd_item *o, *e;
-
   UNUSED(req);
 
-  o = stack;
+  clean();
 
-  while(o) {
-    e = o;
-    o = o->next;
-    free(e);
-  }
-
-  stack = NULL;
+  /* update statistics */
   stats.stack_size = 0;
   stats.stack_mem  = 0;
 
