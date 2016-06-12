@@ -28,6 +28,7 @@
 
 #include "gpushd-common.h"
 #include "parser.h"
+#include "buffer.h"
 
 /* The states of the parser. */
 static int parse_st_header(void);
@@ -35,10 +36,6 @@ static int parse_st_data(void);
 
 /* Current state of the parser. */
 static int (*parse_state_end)(void);
-
-/* The message is assembled in this buffer. */
-static char message_buffer[MAX_MESSAGE_LEN];
-static struct gpushd_message *message = (struct gpushd_message *)message_buffer;
 
 /* Data left to parse and pointer. */
 static int   data_left;

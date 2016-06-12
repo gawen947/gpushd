@@ -40,6 +40,7 @@
 #include "version.h"
 #include "iobuf.h"
 #include "stack.h"
+#include "buffer.h"
 #include "help.h"
 #include "safe-call.h"
 
@@ -72,13 +73,6 @@ static const char *empty_item;
 
 #define PUSH(data, len) update_stats_push(push(data, len))
 #define POP() update_stats_pop(pop())
-
-/* We use a single buffer for parsing messages.
-   FIXME: Check if other modules need to access
-          the buffer. At least the client does.
-          We might put this in a separate unit. */
-static char message_buffer[MAX_MESSAGE_LEN];
-static struct gpushd_message *message = (struct gpushd_message *)message_buffer;
 
 /* xiobuf*  calls abort the program in case of an error.
    xxiobuf* calls abort the program in case of an inconsistent read/write. */
@@ -270,8 +264,6 @@ static void exit_clean(void)
 
 static void send_response(const struct request_context *req, int code, const void *data, int len)
 {
-  static char message_buffer[MAX_MESSAGE_LEN];
-  struct gpushd_message *message = (struct gpushd_message *)message_buffer;
   ssize_t ret;
 
   /* build the message */
@@ -530,7 +522,6 @@ static void server(const char *socket_path, int sync)
 
   while(1) {
     struct timespec begin, end;
-    char buf[MAX_MESSAGE_LEN];
     int n;
 
     /* accept a new connection */
@@ -542,13 +533,13 @@ static void server(const char *socket_path, int sync)
     }
 
     /* read the message */
-    n = recv(fd, buf, MAX_MESSAGE_LEN, 0);
+    n = recv(fd, message_buffer, MAX_MESSAGE_LEN, 0);
     if(n < 0)
       err(EXIT_FAILURE, "network error"); /* FIXME: use standard error message */
 
     /* parse and compute parsing time */
     clock_gettime(CLOCK_MONOTONIC, &begin);
-    parse(buf, n, fd);
+    parse(message_buffer, n, fd);
     clock_gettime(CLOCK_MONOTONIC, &end);
 
     /* statistics */

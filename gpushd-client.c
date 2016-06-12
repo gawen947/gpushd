@@ -40,6 +40,7 @@
 #include "safe-call.h"
 #include "common.h"
 #include "parser.h"
+#include "buffer.h"
 #include "names.h"
 #include "help.h"
 
@@ -290,8 +291,6 @@ static void response(struct request_context *req)
 
 static int send_request(const struct request_context *req, const char *command, const char *argument)
 {
-  static char message_buffer[MAX_MESSAGE_LEN];
-  struct gpushd_message *message = (struct gpushd_message *)message_buffer;
   unsigned int len = 0;
   int waiting = 0;
   int argument_required = 0;
