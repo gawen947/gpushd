@@ -37,7 +37,6 @@
 #define MAX_DATA_LEN    MAX_MESSAGE_LEN - sizeof(struct gpushd_message)
 
 /* Size of the receive buffer */
-/* FIXME: Should be equal to MAX_MESSAGE_LEN we use a smaller value just for testing. */
 #define RECEIVE_BUFFER_SIZE MAX_MESSAGE_LEN
 
 #define MAX_RES_CODE GPUSHD_RES_END
