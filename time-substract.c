@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include "common.h"
 #include "time-substract.h"
 
 #define NSEC 1000000000
@@ -61,6 +62,7 @@ uint64_t substract_nsec(struct timespec *begin, struct timespec *end)
   /* Substract first and check that everything goes correctly. */
   int n = timespec_substract(&diff, end, begin);
   assert(!n);
+  UNUSED(n);
 
   diff_nsec = diff.tv_sec * NSEC + diff.tv_nsec;
 
