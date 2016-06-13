@@ -25,7 +25,14 @@
 #ifndef _ALIGNED_DISPLAY_H_
 #define _ALIGNED_DISPLAY_H_
 
-void push_aligned_display(const char *description, const char *value, const char *unit);
+enum {
+  ALC_DESC  = 1,
+  ALC_VALUE = 2,
+  ALC_UNIT  = 4
+};
+
+void push_aligned_display(const char *description, const char *value, const char *unit,
+                          unsigned int allocated);
 void commit_aligned_display(void);
 
 #endif /* _ALIGNED_DISPLAY_H_ */

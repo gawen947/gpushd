@@ -73,79 +73,79 @@ static void response_info(const struct request_context *req)
   int i;
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->mem_limit);
-  push_aligned_display("Memory limit", strdup(buffer), "B");
+  push_aligned_display("Memory limit", strdup(buffer), "B", ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->stack_mem);
-  push_aligned_display("Stack memory", strdup(buffer), "B");
+  push_aligned_display("Stack memory", strdup(buffer), "B", ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->max_mem);
-  push_aligned_display("Maximum memory", strdup(buffer), "B");
+  push_aligned_display("Maximum memory", strdup(buffer), "B", ALC_VALUE);
 
 
-  push_aligned_display(NULL, NULL, NULL);
+  push_aligned_display(NULL, NULL, NULL, 0);
 
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->entry_limit);
-  push_aligned_display("Stack limit", strdup(buffer), NULL);
+  push_aligned_display("Stack limit", strdup(buffer), NULL, ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->stack_size);
-  push_aligned_display("Stack size", strdup(buffer), NULL);
+  push_aligned_display("Stack size", strdup(buffer), NULL, ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->max_stack);
-  push_aligned_display("Maximum stack size", strdup(buffer), NULL);
+  push_aligned_display("Maximum stack size", strdup(buffer), NULL, ALC_VALUE);
 
 
-  push_aligned_display(NULL, NULL, NULL);
+  push_aligned_display(NULL, NULL, NULL, 0);
 
 
   if(stats->sum_nsec == 0)
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
   else
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->sum_nsec);
-  push_aligned_display("Total processing time", strdup(buffer), "ns");
+  push_aligned_display("Total processing time", strdup(buffer), "ns", ALC_VALUE);
 
   if(stats->min_nsec == UINT64_MAX)
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
   else
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->min_nsec);
-  push_aligned_display("Min processing time", strdup(buffer), "ns");
+  push_aligned_display("Min processing time", strdup(buffer), "ns", ALC_VALUE);
 
   if(stats->max_nsec == 0)
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
   else
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->max_nsec);
-  push_aligned_display("Max processing time", strdup(buffer), "ns");
+  push_aligned_display("Max processing time", strdup(buffer), "ns", ALC_VALUE);
 
 
-  push_aligned_display(NULL, NULL, NULL);
+  push_aligned_display(NULL, NULL, NULL, 0);
 
 
   for(i = (sizeof_array(stats->nb_requests) - 1) ; i >= 0 ; i--) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_requests[i]);
-    push_aligned_display(get_request_name(i), strdup(buffer), NULL);
+    push_aligned_display(get_request_name(i), strdup(buffer), NULL, ALC_VALUE);
   }
 
 
-  push_aligned_display(NULL, NULL, NULL);
+  push_aligned_display(NULL, NULL, NULL, 0);
 
 
   for(i = (sizeof_array(stats->nb_responses) - 1) ; i >= 0 ; i--) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_responses[i]);
-    push_aligned_display(get_response_name(i), strdup(buffer), NULL);
+    push_aligned_display(get_response_name(i), strdup(buffer), NULL, ALC_VALUE);
   }
 
 
-  push_aligned_display(NULL, NULL, NULL);
+  push_aligned_display(NULL, NULL, NULL, 0);
 
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
-  push_aligned_display("Number of error", strdup(buffer), NULL);
+  push_aligned_display("Number of error", strdup(buffer), NULL, ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_sent);
-  push_aligned_display("Messages sent", strdup(buffer), NULL);
+  push_aligned_display("Messages sent", strdup(buffer), NULL, ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_server);
-  push_aligned_display("Server started", strdup(buffer), NULL);
+  push_aligned_display("Server started", strdup(buffer), NULL, ALC_VALUE);
 
 
   commit_aligned_display();
@@ -163,13 +163,13 @@ static void response_version(const struct request_context *req)
   char buffer[DISPLAY_VALUE_BUFFER];
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "v%u.%u", version->major, version->minor);
-  push_aligned_display("server", strdup(buffer), NULL);
+  push_aligned_display("server", strdup(buffer), NULL, ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%04x", version->protocol);
-  push_aligned_display("protocol", strdup(buffer), NULL);
+  push_aligned_display("protocol", strdup(buffer), NULL, ALC_VALUE);
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%04x", version->swap);
-  push_aligned_display("swap", strdup(buffer), NULL);
+  push_aligned_display("swap", strdup(buffer), NULL, ALC_VALUE);
 
   commit_aligned_display();
 }
@@ -185,6 +185,7 @@ static void response_field(const struct request_context *req)
 
   const char *name  = req->data + 1;
   const char *value = name + name_len;
+
 
   /* FIXME: Use push aligned display(), but we need a way to free
             the description on exit... */
@@ -339,14 +340,14 @@ static int send_request(const struct request_context *req, const char *command, 
     fprintf(stderr, "argument error: unknown command\n");
     fprintf(stderr, "Use one of the following:\n\n");
 
-    push_aligned_display("push"   , NULL, "Push a value (argument required).");
-    push_aligned_display("pop"    , NULL, "Pop a value.");
-    push_aligned_display("get"    , NULL, "Get the value on top of the stack.");
-    push_aligned_display("list"   , NULL, "List all entries.");
-    push_aligned_display("info"   , NULL, "Display server statistics.");
-    push_aligned_display("clean"  , NULL, "Remove all entries.");
-    push_aligned_display("version", NULL, "Display server version.");
-    push_aligned_display("extver" , NULL, "Display extended version information.");
+    push_aligned_display("push"   , "Push a value (argument required).", NULL, 0);
+    push_aligned_display("pop"    , "Pop a value.", NULL, 0);
+    push_aligned_display("get"    , "Get the value on top of the stack.", NULL, 0);
+    push_aligned_display("list"   , "List all entries.", NULL, 0);
+    push_aligned_display("info"   , "Display server statistics.", NULL, 0);
+    push_aligned_display("clean"  , "Remove all entries.", NULL, 0);
+    push_aligned_display("version", "Display server version.", NULL, 0);
+    push_aligned_display("extver" , "Display extended version information.", NULL, 0);
 
     commit_aligned_display();
 
