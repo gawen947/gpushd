@@ -146,9 +146,6 @@ static void response_info(const struct request_context *req)
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_server);
   push_aligned_display("Server started", strdup(buffer), NULL, ALC_VALUE);
-
-
-  commit_aligned_display();
 }
 
 static void response_item(const struct request_context *req)
@@ -170,31 +167,20 @@ static void response_version(const struct request_context *req)
 
   snprintf(buffer, DISPLAY_VALUE_BUFFER, "%04x", version->swap);
   push_aligned_display("swap", strdup(buffer), NULL, ALC_VALUE);
-
-  commit_aligned_display();
 }
 
 static void response_field(const struct request_context *req)
 {
-  const char separator[] = ": ";
-  char output[(UINT8_MAX << 1) + sizeof(separator)];
-  char *out = output;
-
   unsigned int name_len  = ((unsigned char *)req->data)[0];
   unsigned int value_len = req->len - name_len - 1;
 
   const char *name  = req->data + 1;
   const char *value = name + name_len;
 
-
-  /* FIXME: Use push aligned display(), but we need a way to free
-            the description on exit... */
-  memcpy(out, name, name_len);               out += name_len;
-  memcpy(out, separator, sizeof(separator)); out += sizeof(separator) - 1;
-  memcpy(out, value, value_len);             out += value_len;
-  *out   = '\0';
-
-  puts(output);
+  push_aligned_display(strndup(name, name_len),
+                       strndup(value, value_len),
+                       NULL,
+                       ALC_DESC | ALC_VALUE);
 }
 
 static void response_error(const struct request_context *req)
@@ -263,7 +249,7 @@ static int parsed(const struct gpushd_message *message, void *data)
     return 0;
 }
 
-static void response(struct request_context *req)
+static void recv_response(struct request_context *req)
 {
   static char receive_buffer[RECEIVE_BUFFER_SIZE];
   int n, more = 1;
@@ -420,7 +406,10 @@ static void client(const char *socket_path, const char *command, const char *arg
 
   /* We only parse the response when needed. */
   if(waiting)
-    response(&request);
+    recv_response(&request);
+
+  /* If we used the aligned display, we display it now. */
+  commit_aligned_display();
 }
 
 static void print_help(const char *name)
