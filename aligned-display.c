@@ -32,7 +32,6 @@
 static struct aligned_row {
   const char *description;
   const char *value;
-  const char *unit;
 
   /* Fields that must be freed by the commit aligned display. */
   unsigned int allocated_fields;
@@ -44,14 +43,13 @@ static struct aligned_row {
 
 static int aligned_max_len = 0;
 
-void push_aligned_display(const char *description, const char *value, const char *unit,
-                          unsigned int allocated)
+void push_aligned_display(const char *description, const char *value,unsigned int allocated)
 {
   struct aligned_row *row = xmalloc(sizeof(struct aligned_row));
   int len = description ? strlen(description) : 0;
 
   /* Push the new row on the list. */
-  *row = (struct aligned_row){ description, value, unit,
+  *row = (struct aligned_row){ description, value,
                                allocated,
                                len,
                                aligned_display };
@@ -88,11 +86,6 @@ void commit_aligned_display(void)
       fputs(row->value, stdout);
     }
 
-    if(row->unit) {
-      fputc(' ', stdout);
-      fputs(row->unit, stdout);
-    }
-
     fputc('\n', stdout);
   }
 
@@ -110,9 +103,6 @@ void commit_aligned_display(void)
 
     if(r->allocated_fields & ALC_VALUE)
       xfree((void *)r->value);
-
-    if(r->allocated_fields & ALC_UNIT)
-      xfree((void *)r->unit);
 
     free((void *)r);
   }
