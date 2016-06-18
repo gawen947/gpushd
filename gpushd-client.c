@@ -42,6 +42,7 @@
 #include "parser.h"
 #include "buffer.h"
 #include "names.h"
+#include "scale.h"
 #include "help.h"
 
 /* The first 7-bits of the waiting value represent
@@ -68,18 +69,19 @@ static void sig_timeout(int signum)
 
 static void response_info(const struct request_context *req)
 {
+  const char *scaled;
   struct gpushd_stats *stats = (struct gpushd_stats *)req->data;
   char buffer[DISPLAY_VALUE_BUFFER];
   int i;
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu B", stats->mem_limit);
-  push_aligned_display("Memory limit", strdup(buffer), ALC_VALUE);
+  scaled = scale_metric(stats->mem_limit, "B");
+  push_aligned_display("Memory limit", strdup(scaled), ALC_VALUE);
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu B", stats->stack_mem);
-  push_aligned_display("Stack memory", strdup(buffer), ALC_VALUE);
+  scaled = scale_metric(stats->stack_mem, "B");
+  push_aligned_display("Stack memory", strdup(scaled), ALC_VALUE);
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu B", stats->max_mem);
-  push_aligned_display("Maximum memory", strdup(buffer), ALC_VALUE);
+  scaled = scale_metric(stats->max_mem, "B");
+  push_aligned_display("Maximum memory", strdup(scaled), ALC_VALUE);
 
 
   push_aligned_display(NULL, NULL, 0);
@@ -98,23 +100,29 @@ static void response_info(const struct request_context *req)
   push_aligned_display(NULL, NULL, 0);
 
 
-  if(stats->sum_nsec == 0)
+  if(stats->sum_nsec == 0) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
+    scaled = buffer;
+  }
   else
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu ns", stats->sum_nsec);
-  push_aligned_display("Total processing time", strdup(buffer), ALC_VALUE);
+    scaled = scale_time(stats->sum_nsec);
+  push_aligned_display("Total processing time", strdup(scaled), ALC_VALUE);
 
-  if(stats->min_nsec == UINT64_MAX)
+  if(stats->min_nsec == UINT64_MAX) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
+    scaled = buffer;
+  }
   else
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu ns", stats->min_nsec);
-  push_aligned_display("Min processing time", strdup(buffer), ALC_VALUE);
+    scaled = scale_time(stats->min_nsec);
+  push_aligned_display("Min processing time", strdup(scaled), ALC_VALUE);
 
-  if(stats->max_nsec == 0)
+  if(stats->max_nsec == 0) {
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
+    scaled = buffer;
+  }
   else
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu ns", stats->max_nsec);
-  push_aligned_display("Max processing time", strdup(buffer), ALC_VALUE);
+    scaled = scale_time(stats->max_nsec);
+  push_aligned_display("Max processing time", strdup(scaled), ALC_VALUE);
 
 
   push_aligned_display(NULL, NULL, 0);
