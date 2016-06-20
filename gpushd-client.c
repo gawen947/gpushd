@@ -94,7 +94,10 @@ static void response_info(const struct request_context *req)
   struct gpushd_stats *stats = (struct gpushd_stats *)req->data;
   int i;
 
-  value = format_value(stats->mem_limit, "B");
+  if(stats->mem_limit == UINT64_MAX)
+    value = "no limit";
+  else
+    value = format_value(stats->mem_limit, "B");
   push_aligned_display("Memory limit", strdup(value), ALC_VALUE);
 
   value = format_value(stats->stack_mem, "B");
@@ -107,7 +110,10 @@ static void response_info(const struct request_context *req)
   push_aligned_display(NULL, NULL, 0);
 
 
-  value = raw_value(stats->entry_limit, NULL);
+  if(stats->entry_limit == (unsigned int)-1)
+    value = "no limit";
+  else
+    value = raw_value(stats->entry_limit, NULL);
   push_aligned_display("Stack limit", strdup(value), ALC_VALUE);
 
   value = raw_value(stats->stack_size, NULL);
