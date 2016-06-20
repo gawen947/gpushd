@@ -59,6 +59,10 @@
 /* Flag indicating the next message expected for the parser. */
 static int waiting;
 
+/* The functions we use to format value (depends on the --raw option). */
+static const char * (*format_value)(uint64_t, const char *) = scale_metric;
+static const char * (*format_time)(uint64_t) = scale_time;
+
 static void sig_timeout(int signum)
 {
   UNUSED(signum);
@@ -67,70 +71,80 @@ static void sig_timeout(int signum)
   exit(EXIT_FAILURE);
 }
 
+static const char *raw_value(uint64_t value, const char *unit)
+{
+  static char buffer[DISPLAY_VALUE_BUFFER];
+
+  if(unit)
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu %s", value, unit);
+  else
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", value);
+
+  return buffer;
+}
+
+static const char *raw_time(uint64_t value)
+{
+  return raw_value(value, "nsec");
+}
+
 static void response_info(const struct request_context *req)
 {
-  const char *scaled;
+  const char *value;
   struct gpushd_stats *stats = (struct gpushd_stats *)req->data;
-  char buffer[DISPLAY_VALUE_BUFFER];
   int i;
 
-  scaled = scale_metric(stats->mem_limit, "B");
-  push_aligned_display("Memory limit", strdup(scaled), ALC_VALUE);
+  value = format_value(stats->mem_limit, "B");
+  push_aligned_display("Memory limit", strdup(value), ALC_VALUE);
 
-  scaled = scale_metric(stats->stack_mem, "B");
-  push_aligned_display("Stack memory", strdup(scaled), ALC_VALUE);
+  value = format_value(stats->stack_mem, "B");
+  push_aligned_display("Stack memory", strdup(value), ALC_VALUE);
 
-  scaled = scale_metric(stats->max_mem, "B");
-  push_aligned_display("Maximum memory", strdup(scaled), ALC_VALUE);
-
-
-  push_aligned_display(NULL, NULL, 0);
-
-
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->entry_limit);
-  push_aligned_display("Stack limit", strdup(buffer), ALC_VALUE);
-
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->stack_size);
-  push_aligned_display("Stack size", strdup(buffer), ALC_VALUE);
-
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%u", stats->max_stack);
-  push_aligned_display("Maximum stack size", strdup(buffer), ALC_VALUE);
+  value = format_value(stats->max_mem, "B");
+  push_aligned_display("Maximum memory", strdup(value), ALC_VALUE);
 
 
   push_aligned_display(NULL, NULL, 0);
 
 
-  if(stats->sum_nsec == 0) {
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
-    scaled = buffer;
-  }
-  else
-    scaled = scale_time(stats->sum_nsec);
-  push_aligned_display("Total processing time", strdup(scaled), ALC_VALUE);
+  value = raw_value(stats->entry_limit, NULL);
+  push_aligned_display("Stack limit", strdup(value), ALC_VALUE);
 
-  if(stats->min_nsec == UINT64_MAX) {
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
-    scaled = buffer;
-  }
-  else
-    scaled = scale_time(stats->min_nsec);
-  push_aligned_display("Min processing time", strdup(scaled), ALC_VALUE);
+  value = raw_value(stats->stack_size, NULL);
+  push_aligned_display("Stack size", strdup(value), ALC_VALUE);
 
-  if(stats->max_nsec == 0) {
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "---");
-    scaled = buffer;
-  }
+  value = raw_value(stats->max_stack, NULL);
+  push_aligned_display("Maximum stack size", strdup(value), ALC_VALUE);
+
+
+  push_aligned_display(NULL, NULL, 0);
+
+
+  if(stats->sum_nsec == 0)
+    value = "---";
   else
-    scaled = scale_time(stats->max_nsec);
-  push_aligned_display("Max processing time", strdup(scaled), ALC_VALUE);
+    value = format_time(stats->sum_nsec);
+  push_aligned_display("Total processing time", strdup(value), ALC_VALUE);
+
+  if(stats->min_nsec == UINT64_MAX)
+    value = "---";
+  else
+    value = format_time(stats->min_nsec);
+  push_aligned_display("Min processing time", strdup(value), ALC_VALUE);
+
+  if(stats->max_nsec == 0)
+    value = "---";
+  else
+    value = format_time(stats->max_nsec);
+  push_aligned_display("Max processing time", strdup(value), ALC_VALUE);
 
 
   push_aligned_display(NULL, NULL, 0);
 
 
   for(i = (sizeof_array(stats->nb_requests) - 1) ; i >= 0 ; i--) {
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_requests[i]);
-    push_aligned_display(get_request_name(i), strdup(buffer), ALC_VALUE);
+    value = raw_value(stats->nb_requests[i], NULL);
+    push_aligned_display(get_request_name(i), strdup(value), ALC_VALUE);
   }
 
 
@@ -138,22 +152,22 @@ static void response_info(const struct request_context *req)
 
 
   for(i = (sizeof_array(stats->nb_responses) - 1) ; i >= 0 ; i--) {
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_responses[i]);
-    push_aligned_display(get_response_name(i), strdup(buffer), ALC_VALUE);
+    value = raw_value(stats->nb_responses[i], NULL);
+    push_aligned_display(get_response_name(i), strdup(value), ALC_VALUE);
   }
 
 
   push_aligned_display(NULL, NULL, 0);
 
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_error);
-  push_aligned_display("Number of error", strdup(buffer), ALC_VALUE);
+  value = raw_value(stats->nb_error, NULL);
+  push_aligned_display("Number of error", strdup(value), ALC_VALUE);
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_sent);
-  push_aligned_display("Messages sent", strdup(buffer), ALC_VALUE);
+  value = raw_value(stats->nb_sent, NULL);
+  push_aligned_display("Messages sent", strdup(value), ALC_VALUE);
 
-  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", stats->nb_server);
-  push_aligned_display("Server started", strdup(buffer), ALC_VALUE);
+  value = raw_value(stats->nb_server, NULL);
+  push_aligned_display("Server started", strdup(value), ALC_VALUE);
 }
 
 static void response_item(const struct request_context *req)
@@ -424,6 +438,7 @@ static void print_help(const char *name)
   struct opt_help messages[] = {
     { 'h', "help",    "Show this help message" },
     { 'V', "version", "Show version information" },
+    { 'r', "raw",     "Do not scale values using time or metric units"},
     { 0, NULL, NULL }
   };
 
@@ -441,17 +456,22 @@ int main(int argc, char *argv[])
   struct option opts[] = {
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, 'V' },
+    { "raw", no_argument, NULL, 'r' },
     { NULL, 0, NULL, 0 }
   };
 
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hV", opts, NULL);
+    int c = getopt_long(argc, argv, "hVr", opts, NULL);
 
     if(c == -1)
       break;
     switch(c) {
+    case('r'):
+      format_value = raw_value;
+      format_time  = raw_time;
+      break;
     case('V'):
       print_version(prog_name);
       exit_status = EXIT_SUCCESS;
