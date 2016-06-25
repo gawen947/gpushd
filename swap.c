@@ -22,6 +22,7 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <err.h>
@@ -89,6 +90,10 @@ void swap_save(const char *swap_path)
   uint32_t version = GPUSHD_SWAP_VERSION;
   iofile_t file;
 
+  /* report swap writing */
+  printf("Saving swap... ");
+  fflush(stdout);
+
   file = iobuf_open(swap_path, O_CREAT | O_WRONLY | O_TRUNC, 00666);
   if(!file) {
     warnx("cannot save swap file");
@@ -107,6 +112,9 @@ void swap_save(const char *swap_path)
   walk(swap_save_item, file);
 
   xiobuf_close(file);
+
+  /* report swap written */
+  printf("done!\n");
 }
 
 static void swap_load_3(iofile_t file)
@@ -152,6 +160,10 @@ void swap_load(const char *swap_path)
   uint32_t version;
   iofile_t file;
 
+  /* report swap loading */
+  printf("Loading swap... ");
+  fflush(stdout);
+
   file = iobuf_open(swap_path, O_RDONLY, 00666);
   if(!file) {
     warnx("new swap file");
@@ -182,6 +194,9 @@ void swap_load(const char *swap_path)
     warnx("unknown swap file version %d", version);
     break;
   }
+
+  /* report swap loaded */
+  printf("done!\n");
 
 CLOSE:
   xiobuf_close(file);
