@@ -67,10 +67,10 @@ static void xxiobuf_write(iofile_t file, const void *buf, size_t count)
 
 static void xxiobuf_read(iofile_t file, void *buf, size_t count)
 {
-  ssize_t ret = iobuf_read(file, buf, count);
+  ssize_t ret = xiobuf_read(file, buf, count);
   if(ret != (ssize_t)count) {
     iobuf_close(file);
-    err(EXIT_FAILURE, "iobuf_read");
+    errx(EXIT_FAILURE, "invalid swap file: file too short");
   }
 }
 
@@ -163,7 +163,7 @@ void swap_load(const char *swap_path)
   xxiobuf_read(file, &version, sizeof(uint32_t));
 
   if(magik1 != GPUSHD_SWAP_MAGIK1 || magik2 != GPUSHD_SWAP_MAGIK2) {
-    warnx("invalid swap file");
+    warnx("invalid swap file: invalid magik number");
     goto CLOSE;
   }
 
