@@ -135,7 +135,7 @@ static void swap_load_3(iofile_t file)
   if(stats.mem_limit == 0)
     stats.mem_limit = -1;
 
-  for(i = 0 ; i < stats.entry_limit ; i++) {
+  for(i = 0 ; i <= stats.entry_limit ; i++) {
     /* Read a new item. If there is no more items the file ends here. */
     n = xiobuf_read(file, &message->len, sizeof(message->len));
     if(n == 0)
