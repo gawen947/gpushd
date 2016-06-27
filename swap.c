@@ -117,7 +117,7 @@ void swap_save(const char *swap_path)
   printf("done!\n");
 }
 
-static void swap_load_3(iofile_t file)
+static void swap_load_3(iofile_t file, unsigned int *entry_limit, uint64_t *mem_limit)
 {
   uint16_t i;
   ssize_t n;
@@ -127,15 +127,14 @@ static void swap_load_3(iofile_t file)
   stats.stack_size = 0;
   stats.stack_mem  = 0;
 
-  /* No limit (0) is actually the maximum.
-     That is ~4G entries and ~16 EiB.
-     I'm sure it will be enough... */
-  if(stats.entry_limit == 0)
-    stats.entry_limit = -1;
-  if(stats.mem_limit == 0)
-    stats.mem_limit = -1;
+  /* If the limit were not configured from the command line
+     we use the value from the swap file instead. */
+  if(*entry_limit == 0)
+    *entry_limit = stats.entry_limit;
+  if(*mem_limit == 0)
+    *mem_limit = stats.mem_limit;
 
-  for(i = 0 ; i <= stats.entry_limit ; i++) {
+  for(i = 0 ; i <= *entry_limit ; i++) {
     /* Read a new item. If there is no more items the file ends here. */
     n = xiobuf_read(file, &message->len, sizeof(message->len));
     if(n == 0)
@@ -146,14 +145,14 @@ static void swap_load_3(iofile_t file)
     PUSH(message->data, message->len);
 
     /* check memory limit */
-    if(stats.stack_mem > stats.mem_limit)
+    if(stats.stack_mem > *mem_limit)
       break;
   }
 
   warnx("swap file too large for stack, remaining items not loaded");
 }
 
-void swap_load(const char *swap_path)
+void swap_load(const char *swap_path, unsigned int *entry_limit, uint64_t *mem_limit)
 {
   uint32_t magik1;
   uint32_t magik2;
@@ -188,7 +187,7 @@ void swap_load(const char *swap_path)
     warnx("version %d deprecated", version);
     break;
   case(3):
-    swap_load_3(file);
+    swap_load_3(file, entry_limit, mem_limit);
     break;
   default:
     warnx("unknown swap file version %d", version);

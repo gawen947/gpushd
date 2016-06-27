@@ -27,9 +27,7 @@
 #include "gpushd-common.h"
 #include "statistics.h"
 
-struct gpushd_stats stats = { .min_nsec    = UINT64_MAX,
-                              .entry_limit = DEFAULT_STACK_LIMIT,
-                              .mem_limit   = DEFAULT_MEM_LIMIT };
+struct gpushd_stats stats = { .min_nsec    = UINT64_MAX };
 
 void update_stats_push(size_t mem_used)
 {

@@ -424,11 +424,11 @@ static void setup_signals(void)
 
 int main(int argc, char *argv[])
 {
-  const char *prog_name;
-  unsigned int entry_limit = 0;
-  uint64_t     mem_limit = 0;
-  int exit_status = EXIT_FAILURE;
-  int sync_ttl    = 0;
+  const char   *prog_name;
+  unsigned int  entry_limit = 0; /* 0 is not-set */
+  uint64_t      mem_limit   = 0;
+  int           exit_status = EXIT_FAILURE;
+  int           sync_ttl    = 0;
 
   struct option opts[] = {
     { "help", no_argument, NULL, 'h' },
@@ -461,12 +461,14 @@ int main(int argc, char *argv[])
     case('S'):
       entry_limit = atoi(optarg);
 
+      /* No limit (0) is actually the maximum.
+         That is ~4G entries and ~16 EiB.
+         I'm sure it will be enough... */
       if(entry_limit == 0)
         entry_limit = -1;
       break;
     case('M'):
       mem_limit = atoi(optarg);
-
       if(mem_limit == 0)
         mem_limit = -1;
       break;
@@ -493,16 +495,21 @@ int main(int argc, char *argv[])
   socket_path = argv[0];
   swap_path   = argv[1];
 
-  swap_load(swap_path);
+  swap_load(swap_path, &entry_limit, &mem_limit);
   stats.nb_server++;
 
   setup_signals();
 
-  /* command line limits override swap */
-  if(entry_limit)
-    stats.entry_limit = entry_limit;
-  if(mem_limit)
-    stats.mem_limit = mem_limit;
+  /* if the limit were not set from the swap or cli
+     we set it to the default value */
+  if(entry_limit == 0)
+    entry_limit = DEFAULT_ENTRY_LIMIT;
+  if(mem_limit == 0)
+    mem_limit = DEFAULT_MEM_LIMIT;
+
+  /* report the limit into the stats context */
+  stats.entry_limit = entry_limit;
+  stats.mem_limit   = mem_limit;
 
   server(socket_path, sync_ttl);
   /* never return */
