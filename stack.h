@@ -52,7 +52,7 @@ size_t pop(void);
 void clean(void);
 
 /* Visit each element of the stack. */
-void walk(void (*visit)(const struct gpushd_item *, void *), void *data);
+int walk(int (*visit)(const struct gpushd_item *, void *), void *data);
 
 /* Return non zero if the stack is empty.
    Return zero if the stack is not empty. */

@@ -75,12 +75,14 @@ static void xxiobuf_read(iofile_t file, void *buf, size_t count)
   }
 }
 
-static void swap_save_item(const struct gpushd_item *item, void *data)
+static int swap_save_item(const struct gpushd_item *item, void *data)
 {
   iofile_t file = (iofile_t)data;
 
   xxiobuf_write(file, &item->len, sizeof(uint16_t));
   xxiobuf_write(file, &item->data, item->len);
+
+  return 0;
 }
 
 void swap_save(const char *swap_path)

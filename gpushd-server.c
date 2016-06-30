@@ -83,7 +83,7 @@ static void exit_clean(void)
   swap_save(swap_path);
 }
 
-static void send_response(const struct request_context *req, int code, const void *data, int len)
+static int send_response(const struct request_context *req, int code, const void *data, int len)
 {
   ssize_t ret;
 
@@ -98,21 +98,22 @@ static void send_response(const struct request_context *req, int code, const voi
   ret = iobuf_write(req->stream, message, sizeof(struct gpushd_message) + len);
   if(ret < 0) {
     perror("server error: send()");
-    return;
+    return -1;
   }
 
   stats.nb_responses[code]++;
   stats.nb_sent++;
+
+  return 0;
 }
 
-static void send_error(const struct request_context *req, struct gpushd_error error)
+static int send_error(const struct request_context *req, struct gpushd_error error)
 {
-  send_response(req, GPUSHD_RES_ERROR, &error, sizeof(struct gpushd_error));
-
   stats.nb_error++;
+  return send_response(req, GPUSHD_RES_ERROR, &error, sizeof(struct gpushd_error));
 }
 
-static void send_field(const struct request_context *req, const char *name, const char *value)
+static int send_field(const struct request_context *req, const char *name, const char *value)
 {
   static char field_buffer[(UINT8_MAX << 1) + 1];
   int name_len, value_len;
@@ -128,7 +129,7 @@ static void send_field(const struct request_context *req, const char *name, cons
   memcpy(field_buffer + 1           , name , name_len);
   memcpy(field_buffer + 1 + name_len, value, value_len);
 
-  send_response(req, GPUSHD_RES_FIELD, field_buffer, name_len + value_len + 1);
+  return send_response(req, GPUSHD_RES_FIELD, field_buffer, name_len + value_len + 1);
 }
 
 
@@ -147,16 +148,18 @@ static void request_push(const struct request_context *req)
   send_end();
 }
 
-static void request_list_send_item(const struct gpushd_item *item, void *data)
+static int request_list_send_item(const struct gpushd_item *item, void *data)
 {
   const struct request_context *req = data;
 
-  send_response(req, GPUSHD_RES_ITEM, item->data, item->len);
+  return send_response(req, GPUSHD_RES_ITEM, item->data, item->len);
 }
 
 static void request_list(const struct request_context *req)
 {
-  walk(request_list_send_item, (void *)req);
+  /* abort when connection fail */
+  if(walk(request_list_send_item, (void *)req) < 0)
+    return;
 
   if(empty_item)
     send_response(req, GPUSHD_RES_ITEM, empty_item, empty_len);
@@ -250,8 +253,10 @@ static void request_extver(const struct request_context *req)
     { NULL, NULL }
   }, *e;
 
-  for(e = extended_version_fields ; e->name ; e++)
-    send_field(req, e->name, e->value);
+  for(e = extended_version_fields ; e->name ; e++) {
+    if(send_field(req, e->name, e->value) < 0)
+      return;
+  }
   send_end();
 }
 

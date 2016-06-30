@@ -94,12 +94,17 @@ void clean(void)
   }
 }
 
-void walk(void (*visit)(const struct gpushd_item *, void *), void *data)
+int walk(int (*visit)(const struct gpushd_item *, void *), void *data)
 {
   const struct stack_entry *e;
 
-  for(e = stack ; e ; e = e->next)
-    visit(&e->item, data);
+  for(e = stack ; e ; e = e->next) {
+    int ret = visit(&e->item, data);
+    if(ret)
+      return ret;
+  }
+
+  return 0;
 }
 
 int is_empty(void)
