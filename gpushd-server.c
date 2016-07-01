@@ -46,7 +46,8 @@
 #include "help.h"
 #include "safe-call.h"
 
-/* various statistics */
+/* Timeout until request end */
+#define REQUEST_TIMEOUT 1
 
 /* path to a swap file for the stack and statistics
    and the unix socket used for the server */
@@ -333,9 +334,9 @@ static void report_request_time(struct timespec *begin, struct timespec *end)
 
 static void server(const char *socket_path, int sync)
 {
-  int ttl = sync;
-
+  struct timeval timeout = { REQUEST_TIMEOUT, 0 };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
+  int ttl = sync;
   int sd;
 
   /* socket creation */
@@ -363,6 +364,9 @@ static void server(const char *socket_path, int sync)
         continue;
       err(EXIT_FAILURE, "accept()"); /* FIXME: use standard error message format (see client) */
     }
+
+    /* configure timeout limit */
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
 
     /* read the message */
     n = recv(fd, message_buffer, MAX_MESSAGE_LEN, 0);
