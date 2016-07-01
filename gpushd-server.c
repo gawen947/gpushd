@@ -57,6 +57,9 @@ static const char *socket_path;
 static unsigned int empty_len;
 static const char *empty_item;
 
+/* disable swap */
+static int no_swap;
+
 #define error_code(maj, min)                                   \
   (struct gpushd_error){ .major = GPUSHD_ERROR_MAJOR_ ## maj,  \
                          .minor = GPUSHD_ERROR_MINOR_ ## min }
@@ -67,7 +70,8 @@ static void sig_swap(int signum)
 {
   UNUSED(signum);
 
-  swap_save(swap_path);
+  if(!no_swap)
+    swap_save(swap_path);
 }
 
 static void sig_term(int signum)
@@ -80,7 +84,9 @@ static void exit_clean(void)
 {
   printf("exiting...\n");
   unlink(socket_path);
-  swap_save(swap_path);
+
+  if(!no_swap)
+    swap_save(swap_path);
 }
 
 static int send_response(const struct request_context *req, int code, const void *data, int len)
@@ -386,13 +392,16 @@ static void print_help(const char *name)
     { 'V', "version", "Show version information" },
     { 's', "sync",    "Sync after a number of request" },
     { 'd', "default", "Default value for an empty stack" },
+    { 'n', "no-swap", "Do not use a swap file" },
     { 'S', "size",    "Maximum stack size (use 0 for no limit, default: 65k)" },
     { 'M', "memory",  "Maximum stack memory (use 0 for no limit, default: 128MB)" },
     { 'R', "reset",   "Reset statistics" },
     { 0, NULL, NULL }
   };
 
-  help(name, "[OPTIONS] SOCKET SWAP", messages);
+  help(name,
+       no_swap ? "[OPTIONS] SOCKET" : "[OPTIONS] SOCKET SWAP",
+       messages);
 }
 
 static void setup_siglist(int signals[], struct sigaction *act, int size)
@@ -442,6 +451,7 @@ int main(int argc, char *argv[])
     { "version", no_argument, NULL, 'V' },
     { "sync", required_argument, NULL, 's' },
     { "default", required_argument, NULL, 'd' },
+    { "no-swap", no_argument, NULL, 'n' },
     { "size", required_argument, NULL, 'S' },
     { "memory", required_argument, NULL, 'M' },
     { "reset", no_argument, NULL, 'R' },
@@ -451,7 +461,7 @@ int main(int argc, char *argv[])
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hVs:d:S:M:R", opts, NULL);
+    int c = getopt_long(argc, argv, "hVs:d:nS:M:R", opts, NULL);
 
     if(c == -1)
       break;
@@ -465,6 +475,9 @@ int main(int argc, char *argv[])
     case('d'):
       empty_item = optarg;
       empty_len  = strlen(optarg);
+      break;
+    case('n'):
+      no_swap = 1;
       break;
     case('S'):
       entry_limit = atoi(optarg);
@@ -498,7 +511,7 @@ int main(int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
-  if(argc != 2) {
+  if(argc != (no_swap ? 1 : 2)) {
     print_help(prog_name);
     goto EXIT;
   }
@@ -506,7 +519,8 @@ int main(int argc, char *argv[])
   socket_path = argv[0];
   swap_path   = argv[1];
 
-  swap_load(swap_path, reset, &entry_limit, &mem_limit);
+  if(!no_swap)
+    swap_load(swap_path, reset, &entry_limit, &mem_limit);
   stats.nb_server++;
 
   setup_signals();
