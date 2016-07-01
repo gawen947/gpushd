@@ -46,10 +46,10 @@
 #include "scale.h"
 #include "help.h"
 
-/* Timeout until request end */
-#define REQUEST_TIMEOUT 1
-
 #define DISPLAY_VALUE_BUFFER UINT8_MAX
+
+/* Timeout value (in ms) */
+static unsigned long timeout = DEFAULT_TIMEOUT;
 
 /* Flag indicating the next message expected for the parser. */
 static int waiting;
@@ -311,8 +311,8 @@ static int send_request(const struct command *cmd, const struct request_context 
 
 static void client(const struct command *cmd, const char *socket_path)
 {
-  struct timeval timeout = { REQUEST_TIMEOUT, 0 };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
+  struct timeval tv_timeout;
   struct request_context request;
 
   /* socket creation */
@@ -326,6 +326,9 @@ static void client(const struct command *cmd, const char *socket_path)
   waiting = send_request(cmd, &request);
 
   /* configure timeout limit */
+  timeout           *= 1000; /* ms to us */
+  tv_timeout.tv_sec  = timeout / 1000000;
+  tv_timeout.tv_usec = timeout % 1000000;
   setsockopt(request.fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
 
   /* We only parse the response when needed. */
@@ -342,6 +345,7 @@ static void print_help(const char *name)
     { 'h', "help",    "Show this help message" },
     { 'V', "version", "Show version information" },
     { 'r', "raw",     "Do not scale values using time or metric units"},
+    { 'T', "timeout", "Request timeout (in milliseconds, default: 1000)" },
     { 0, NULL, NULL }
   };
 
@@ -361,13 +365,14 @@ int main(int argc, char *argv[])
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, 'V' },
     { "raw", no_argument, NULL, 'r' },
+    { "timeout", required_argument, NULL, 'T' },
     { NULL, 0, NULL, 0 }
   };
 
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hVr", opts, NULL);
+    int c = getopt_long(argc, argv, "hVrT:", opts, NULL);
 
     if(c == -1)
       break;
@@ -380,6 +385,9 @@ int main(int argc, char *argv[])
       print_version(prog_name);
       exit_status = EXIT_SUCCESS;
       goto EXIT;
+    case('T'):
+      timeout = atoi(optarg);
+      break;
     case('h'):
       exit_status = EXIT_SUCCESS;
     default:

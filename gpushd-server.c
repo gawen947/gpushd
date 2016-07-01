@@ -46,8 +46,8 @@
 #include "help.h"
 #include "safe-call.h"
 
-/* Timeout until request end */
-#define REQUEST_TIMEOUT 1
+/* Timeout value (in ms) */
+static unsigned long timeout = DEFAULT_TIMEOUT;
 
 /* path to a swap file for the stack and statistics
    and the unix socket used for the server */
@@ -334,8 +334,8 @@ static void report_request_time(struct timespec *begin, struct timespec *end)
 
 static void server(const char *socket_path, int sync)
 {
-  struct timeval timeout = { REQUEST_TIMEOUT, 0 };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
+  struct timeval tv_timeout;
   int ttl = sync;
   int sd;
 
@@ -366,6 +366,9 @@ static void server(const char *socket_path, int sync)
     }
 
     /* configure timeout limit */
+    timeout           *= 1000; /* ms to us */
+    tv_timeout.tv_sec  = timeout / 1000000;
+    tv_timeout.tv_usec = timeout % 1000000;
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
 
     /* read the message */
@@ -402,6 +405,7 @@ static void print_help(const char *name)
     { 'S', "size",    "Maximum stack size (use 0 for no limit, default: 65k)" },
     { 'M', "memory",  "Maximum stack memory (use 0 for no limit, default: 128MB)" },
     { 'R', "reset",   "Reset statistics" },
+    { 'T', "timeout", "Request timeout (in milliseconds, default: 1000)" },
     { 0, NULL, NULL }
   };
 
@@ -461,13 +465,14 @@ int main(int argc, char *argv[])
     { "size", required_argument, NULL, 'S' },
     { "memory", required_argument, NULL, 'M' },
     { "reset", no_argument, NULL, 'R' },
+    { "timeout", required_argument, NULL, 'T' },
     { NULL, 0, NULL, 0 }
   };
 
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hVs:d:nS:M:R", opts, NULL);
+    int c = getopt_long(argc, argv, "hVs:d:nS:M:RT:", opts, NULL);
 
     if(c == -1)
       break;
@@ -501,6 +506,9 @@ int main(int argc, char *argv[])
       break;
     case ('R'):
       reset = 1;
+      break;
+    case('T'):
+      timeout = atoi(optarg);
       break;
     case('V'):
       print_version(prog_name);
