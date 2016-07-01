@@ -58,14 +58,6 @@ static int waiting;
 static const char * (*format_value)(uint64_t, const char *) = scale_metric;
 static const char * (*format_time)(uint64_t) = scale_time;
 
-static void sig_timeout(int signum)
-{
-  UNUSED(signum);
-
-  fprintf(stderr, "server error: timeout\n");
-  exit(EXIT_FAILURE);
-}
-
 static const char *raw_value(uint64_t value, const char *unit)
 {
   static char buffer[DISPLAY_VALUE_BUFFER];
@@ -279,7 +271,6 @@ static void recv_response(struct request_context *req)
   parse_init(parsed, req);
 
   while(more) {
-    /* FIXME: use  setsockopt() for timeout ? */
     n = recv(req->fd, receive_buffer, RECEIVE_BUFFER_SIZE, 0);
     if(n < 0)
       err(EXIT_FAILURE, "network error");
@@ -320,15 +311,9 @@ static int send_request(const struct command *cmd, const struct request_context 
 
 static void client(const struct command *cmd, const char *socket_path)
 {
-  struct request_context request;
-  struct sigaction act_timeout = { .sa_handler = sig_timeout, .sa_flags   = 0 };
+  struct timeval timeout = { REQUEST_TIMEOUT, 0 };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
-
-  /* limit request time */
-  /* FIXME: use setsockopt() instead */
-  sigfillset(&act_timeout.sa_mask);
-  sigaction(SIGALRM, &act_timeout, NULL);
-  alarm(REQUEST_TIMEOUT);
+  struct request_context request;
 
   /* socket creation */
   xstrcpy(s_addr.sun_path, socket_path, sizeof(s_addr.sun_path));
@@ -339,6 +324,9 @@ static void client(const struct command *cmd, const char *socket_path)
 
   /* send request and wait for responses */
   waiting = send_request(cmd, &request);
+
+  /* configure timeout limit */
+  setsockopt(request.fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
 
   /* We only parse the response when needed. */
   if(waiting)
