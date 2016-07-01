@@ -31,7 +31,7 @@
 #include "iobuf.h"
 
 /* Default timeout */
-#define DEFAULT_TIMEOUT 1000
+#define DEFAULT_TIMEOUT 100
 
 /* Maximum length of a single message. */
 #define MAX_MESSAGE_LEN UINT16_MAX + sizeof(struct gpushd_message)
