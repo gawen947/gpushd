@@ -38,18 +38,13 @@
 #include "aligned-display.h"
 #include "gpushd-common.h"
 #include "safe-call.h"
+#include "command.h"
 #include "common.h"
 #include "parser.h"
 #include "buffer.h"
 #include "names.h"
 #include "scale.h"
 #include "help.h"
-
-/* The first 7-bits of the waiting value represent
-   the next message expected. The 8th bit specifies
-   that we also accept an END message that marks the
-   end of the response. */
-#define WAITING_ACCEPT_END 1 << (8 + 0)
 
 /* Timeout until request end */
 #define REQUEST_TIMEOUT 1
@@ -303,113 +298,27 @@ static void recv_response(struct request_context *req)
   }
 }
 
-static int send_request(const struct request_context *req, const char *command, const char *argument)
+static int send_request(const struct command *cmd, const struct request_context *req)
 {
-  unsigned int len = 0;
-  int waiting = 0;
-  int argument_required = 0;
   ssize_t ret;
 
-  /* TODO: we should use an optimized tree parser here */
-  /* FIXME: parse the command and argument in another function. */
-  if(!strcmp(command, "push")) {
-    message->code = GPUSHD_REQ_PUSH;
-    waiting     |= WAITING_ACCEPT_END;
-
-    argument_required = 1;
-  }
-  else if(!strcmp(command, "pop")) {
-    message->code = GPUSHD_REQ_POP;
-    waiting      = GPUSHD_RES_ITEM;
-  }
-  else if(!strcmp(command, "get")) {
-    message->code = GPUSHD_REQ_GET;
-    waiting      = GPUSHD_RES_ITEM;
-  }
-  else if(!strcmp(command, "list")) {
-    message->code  = GPUSHD_REQ_LIST;
-    waiting       = GPUSHD_RES_ITEM;
-    waiting      |= WAITING_ACCEPT_END;
-  }
-  else if(!strcmp(command, "info")) {
-    message->code = GPUSHD_REQ_INFO;
-    waiting      = GPUSHD_RES_INFO;
-  }
-  else if(!strcmp(command, "clean")) {
-    message->code = GPUSHD_REQ_CLEAN;
-    waiting     |= WAITING_ACCEPT_END;
-  }
-  else if(!strcmp(command, "version")) {
-    message->code = GPUSHD_REQ_VERSION;
-    waiting      = GPUSHD_RES_VERSION;
-  }
-  else if(!strcmp(command, "extver")) {
-    message->code  = GPUSHD_REQ_EXTVER;
-    waiting       = GPUSHD_RES_FIELD;
-    waiting      |= WAITING_ACCEPT_END;
-  }
-  else {
-    /* Display message list. */
-    fprintf(stderr, "argument error: unknown command\n");
-    fprintf(stderr, "Use one of the following:\n\n");
-
-    push_aligned_display("push"   , "Push a value (argument required).", 0);
-    push_aligned_display("pop"    , "Pop a value.", 0);
-    push_aligned_display("get"    , "Get the value on top of the stack.", 0);
-    push_aligned_display("list"   , "List all entries.", 0);
-    push_aligned_display("info"   , "Display server statistics.", 0);
-    push_aligned_display("clean"  , "Remove all entries.", 0);
-    push_aligned_display("version", "Display server version.", 0);
-    push_aligned_display("extver" , "Display extended version information.", 0);
-
-    commit_aligned_display();
-
-    exit(EXIT_FAILURE);
-  }
-
-  /* All requests must have a reponse
-     or at least expect an end message. */
-  assert(waiting);
-
-  /* FIXME: this check should be done before we create the connection */
-  if(!argument && argument_required) {
-    fprintf(stderr, "argument error: argument required\n");
-    exit(EXIT_FAILURE);
-  }
-  else if (argument && !argument_required) {
-    fprintf(stderr, "argument error: excess argument\n");
-    exit(EXIT_FAILURE);
-  }
-
-  if(argument) {
-    len = strlen(argument);
-
-    /* The argument may be too long. */
-    /* FIXME: We should check if argument is possible in the client. */
-    /* FIXME: We should limit the length in the client. */
-    if(len >= MAX_DATA_LEN) {
-      /* FIXME: use the dedicated error function */
-      fprintf(stderr, "argument error: argument too long\n");
-      exit(EXIT_FAILURE);
-    }
-
-    memcpy(message->data, argument, len);
-  }
-
-  /* Now that the message is assembled we can set the len field. */
-  message->len = len;
+  /* Assemble the message from the command. */
+  if(cmd->argument)
+    memcpy(message->data, cmd->argument, cmd->len);
+  message->code = cmd->code;
+  message->len  = cmd->len;
 
   /* FIXME: use a separate function for sending. */
-  ret = send(req->fd, message, sizeof(struct gpushd_message) + len, 0);
+  ret = send(req->fd, message, sizeof(struct gpushd_message) + cmd->len, 0);
   if(ret < 0) {
     perror("client error: send()");
     exit(EXIT_FAILURE);
   }
 
-  return waiting;
+  return cmd->waiting;
 }
 
-static void client(const char *socket_path, const char *command, const char *argument)
+static void client(const struct command *cmd, const char *socket_path)
 {
   struct request_context request;
   struct sigaction act_timeout = { .sa_handler = sig_timeout, .sa_flags   = 0 };
@@ -429,7 +338,7 @@ static void client(const char *socket_path, const char *command, const char *arg
   xconnect(request.fd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
 
   /* send request and wait for responses */
-  waiting = send_request(&request, command, argument);
+  waiting = send_request(cmd, &request);
 
   /* We only parse the response when needed. */
   if(waiting)
@@ -453,6 +362,7 @@ static void print_help(const char *name)
 
 int main(int argc, char *argv[])
 {
+  struct command cmd;
   int exit_status      = EXIT_FAILURE;
   const char *argument = NULL;
   const char *command;
@@ -504,6 +414,9 @@ int main(int argc, char *argv[])
   if(argc == 3)
     argument = argv[2];
 
+  /* Parse command */
+  parse_command(&cmd, command, argument);
+
   /* Assemble the request, send it and parse the response.
 
      If there is an error during the process, the program
@@ -511,7 +424,7 @@ int main(int argc, char *argv[])
      the error in return values. This way we avoid the need
      to handle negative values when the return value is used
      for some other purposes in the call path. */
-  client(socket_path, command, argument);
+  client(&cmd, socket_path);
   exit_status = EXIT_SUCCESS;
 
 EXIT:
