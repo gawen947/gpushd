@@ -30,7 +30,7 @@
 
 #include "iobuf.h"
 
-/* Default timeout */
+/* Default timeout (in millisecs). */
 #define DEFAULT_TIMEOUT 100
 
 /* Maximum length of a single message. */
