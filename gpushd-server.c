@@ -370,8 +370,10 @@ static void server(const char *socket_path, int sync)
 
     /* read the message */
     n = recv(fd, message_buffer, MAX_MESSAGE_LEN, 0);
-    if(n < 0)
-      err(EXIT_FAILURE, "network error"); /* FIXME: use standard error message */
+    if(n < 0) {
+      warn("network error"); /* FIXME: use standard error message */
+      continue; /* we don't fail on client error */
+    }
 
     /* parse and compute parsing time */
     clock_gettime(CLOCK_MONOTONIC, &begin);
