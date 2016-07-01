@@ -119,13 +119,16 @@ void swap_save(const char *swap_path)
   printf("done!\n");
 }
 
-static void swap_load_3(iofile_t file, unsigned int *entry_limit, uint64_t *mem_limit)
+static void swap_load_3(iofile_t file, int reset, unsigned int *entry_limit, uint64_t *mem_limit)
 {
   uint16_t i;
   ssize_t n;
 
   /* Load the statistics we also have to reset some fields. */
-  xxiobuf_read(file, &stats, sizeof(struct gpushd_stats));
+  if(!reset)
+    xxiobuf_read(file, &stats, sizeof(struct gpushd_stats));
+  else
+    iobuf_lseek(file, sizeof(struct gpushd_stats), SEEK_CUR);
   stats.stack_size = 0;
   stats.stack_mem  = 0;
 
@@ -154,7 +157,7 @@ static void swap_load_3(iofile_t file, unsigned int *entry_limit, uint64_t *mem_
   warnx("swap file too large for stack, remaining items not loaded");
 }
 
-void swap_load(const char *swap_path, unsigned int *entry_limit, uint64_t *mem_limit)
+void swap_load(const char *swap_path, int reset, unsigned int *entry_limit, uint64_t *mem_limit)
 {
   uint32_t magik1;
   uint32_t magik2;
@@ -189,7 +192,7 @@ void swap_load(const char *swap_path, unsigned int *entry_limit, uint64_t *mem_l
     warnx("version %d deprecated", version);
     break;
   case(3):
-    swap_load_3(file, entry_limit, mem_limit);
+    swap_load_3(file, reset, entry_limit, mem_limit);
     break;
   default:
     warnx("unknown swap file version %d", version);

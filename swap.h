@@ -30,6 +30,6 @@
 #define GPUSHD_SWAP_VERSION 3
 
 void swap_save(const char *swap_path);
-void swap_load(const char *swap_path, unsigned int *entry_limit, uint64_t *mem_limit);
+void swap_load(const char *swap_path, int reset, unsigned int *entry_limit, uint64_t *mem_limit);
 
 #endif /* _SWAP_H_ */

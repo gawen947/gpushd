@@ -388,6 +388,7 @@ static void print_help(const char *name)
     { 'd', "default", "Default value for an empty stack" },
     { 'S', "size",    "Maximum stack size (use 0 for no limit, default: 65k)" },
     { 'M', "memory",  "Maximum stack memory (use 0 for no limit, default: 128MB)" },
+    { 'R', "reset",   "Reset statistics" },
     { 0, NULL, NULL }
   };
 
@@ -434,6 +435,7 @@ int main(int argc, char *argv[])
   uint64_t      mem_limit   = 0;
   int           exit_status = EXIT_FAILURE;
   int           sync_ttl    = 0;
+  int           reset       = 0;
 
   struct option opts[] = {
     { "help", no_argument, NULL, 'h' },
@@ -442,13 +444,14 @@ int main(int argc, char *argv[])
     { "default", required_argument, NULL, 'd' },
     { "size", required_argument, NULL, 'S' },
     { "memory", required_argument, NULL, 'M' },
+    { "reset", no_argument, NULL, 'R' },
     { NULL, 0, NULL, 0 }
   };
 
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hVs:d:S:M:", opts, NULL);
+    int c = getopt_long(argc, argv, "hVs:d:S:M:R", opts, NULL);
 
     if(c == -1)
       break;
@@ -477,6 +480,9 @@ int main(int argc, char *argv[])
       if(mem_limit == 0)
         mem_limit = -1;
       break;
+    case ('R'):
+      reset = 1;
+      break;
     case('V'):
       print_version(prog_name);
       exit_status = EXIT_SUCCESS;
@@ -500,7 +506,7 @@ int main(int argc, char *argv[])
   socket_path = argv[0];
   swap_path   = argv[1];
 
-  swap_load(swap_path, &entry_limit, &mem_limit);
+  swap_load(swap_path, reset, &entry_limit, &mem_limit);
   stats.nb_server++;
 
   setup_signals();
