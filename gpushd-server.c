@@ -405,7 +405,7 @@ static void print_help(const char *name)
     { 'S', "size",    "Maximum stack size (use 0 for no limit, default: 65k)" },
     { 'M', "memory",  "Maximum stack memory (use 0 for no limit, default: 128MB)" },
     { 'R', "reset",   "Reset statistics" },
-    { 'T', "timeout", "Request timeout (in milliseconds, default: 1000)" },
+    { 'T', "timeout", "Request timeout (in milliseconds, default: 100)" },
     { 0, NULL, NULL }
   };
 

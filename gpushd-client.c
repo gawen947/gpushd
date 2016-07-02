@@ -345,7 +345,7 @@ static void print_help(const char *name)
     { 'h', "help",    "Show this help message" },
     { 'V', "version", "Show version information" },
     { 'r', "raw",     "Do not scale values using time or metric units"},
-    { 'T', "timeout", "Request timeout (in milliseconds, default: 1000)" },
+    { 'T', "timeout", "Request timeout (in milliseconds, default: 100)" },
     { 0, NULL, NULL }
   };
 
