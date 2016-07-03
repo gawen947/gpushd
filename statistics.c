@@ -27,7 +27,7 @@
 #include "gpushd-common.h"
 #include "statistics.h"
 
-struct gpushd_stats stats = { .min_nsec    = UINT64_MAX };
+struct gpushd_stats stats = { .min_nsec = UINT64_MAX };
 
 void update_stats_push(size_t mem_used)
 {
@@ -43,6 +43,9 @@ void update_stats_push(size_t mem_used)
 
 void update_stats_pop(size_t mem_freed)
 {
-  stats.stack_size--;
-  stats.stack_mem -= mem_freed;
+  if(stats.stack_size > 0) { /* avoid updating stats when we
+                                pop the default empty item */
+    stats.stack_size--;
+    stats.stack_mem -= mem_freed;
+  }
 }
