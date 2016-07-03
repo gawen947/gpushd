@@ -58,9 +58,9 @@ static int waiting;
 static const char * (*format_value)(uint64_t, const char *) = scale_metric;
 static const char * (*format_time)(uint64_t) = scale_time;
 
-static const char *raw_value(uint64_t value, const char *unit)
+static const char * raw_value(uint64_t value, const char *unit)
 {
-  static char buffer[DISPLAY_VALUE_BUFFER];
+  static char buffer[DISPLAY_VALUE_BUFFER]; /* FIXME: move this static buffer in buffer.o */
 
   if(unit)
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu %s", value, unit);
@@ -70,9 +70,30 @@ static const char *raw_value(uint64_t value, const char *unit)
   return buffer;
 }
 
-static const char *raw_time(uint64_t value)
+static const char * raw_time(uint64_t value)
 {
   return raw_value(value, "nsec");
+}
+
+static const char * limited_value(const char * (*format)(uint64_t, const char *),
+                                  uint64_t value, uint64_t limit, uint64_t no_limit,
+                                  const char *unit)
+{
+  static char buffer[DISPLAY_VALUE_BUFFER]; /* FIXME: move this static buffer in buffer.o */
+  char *s_value, *s_limit;
+
+  if(limit == no_limit)
+    return format(value, unit);
+
+  s_value = strdup(format(value, unit));
+  s_limit = strdup(format(limit, unit));
+
+  snprintf(buffer, DISPLAY_VALUE_BUFFER, "%s / %s", s_value, s_limit);
+
+  free(s_value);
+  free(s_limit);
+
+  return buffer;
 }
 
 static void response_info(const struct request_context *req)
@@ -81,13 +102,8 @@ static void response_info(const struct request_context *req)
   struct gpushd_stats *stats = (struct gpushd_stats *)req->data;
   int i;
 
-  if(stats->mem_limit == UINT64_MAX)
-    value = "no limit";
-  else
-    value = format_value(stats->mem_limit, "B");
-  push_aligned_display("Memory limit", strdup(value), ALC_VALUE);
 
-  value = format_value(stats->stack_mem, "B");
+  value = limited_value(format_value, stats->stack_mem, stats->mem_limit, (uint64_t)-1, "B");
   push_aligned_display("Stack memory", strdup(value), ALC_VALUE);
 
   value = format_value(stats->max_mem, "B");
@@ -97,13 +113,7 @@ static void response_info(const struct request_context *req)
   push_aligned_display(NULL, NULL, 0);
 
 
-  if(stats->entry_limit == (unsigned int)-1)
-    value = "no limit";
-  else
-    value = raw_value(stats->entry_limit, NULL);
-  push_aligned_display("Stack limit", strdup(value), ALC_VALUE);
-
-  value = raw_value(stats->stack_size, NULL);
+  value = limited_value(raw_value, stats->stack_size, stats->entry_limit, (unsigned int)-1, NULL);
   push_aligned_display("Stack size", strdup(value), ALC_VALUE);
 
   value = raw_value(stats->max_stack, NULL);
