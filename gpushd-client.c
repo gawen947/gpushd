@@ -60,7 +60,7 @@ static const char * (*format_time)(uint64_t) = scale_time;
 
 static const char * raw_value(uint64_t value, const char *unit)
 {
-  static char buffer[DISPLAY_VALUE_BUFFER]; /* FIXME: move this static buffer in buffer.o */
+  static char buffer[DISPLAY_VALUE_BUFFER];
 
   if(unit)
     snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu %s", value, unit);
@@ -79,7 +79,7 @@ static const char * limited_value(const char * (*format)(uint64_t, const char *)
                                   uint64_t value, uint64_t limit, uint64_t no_limit,
                                   const char *unit)
 {
-  static char buffer[DISPLAY_VALUE_BUFFER]; /* FIXME: move this static buffer in buffer.o */
+  static char buffer[DISPLAY_VALUE_BUFFER];
   char *s_value, *s_limit;
 
   if(limit == no_limit)
