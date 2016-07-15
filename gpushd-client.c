@@ -365,7 +365,7 @@ static void print_help(const char *name)
     { 0, NULL, NULL }
   };
 
-  help(name, "[OPTIONS] SOCKET COMMAND COMMAND-ARGUMENT", messages);
+  help(name, "[OPTIONS] SOCKET COMMAND/help [COMMAND-ARGUMENT]", messages);
 }
 
 int main(int argc, char *argv[])

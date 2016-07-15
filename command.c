@@ -41,6 +41,8 @@ void parse_command(struct command *cmd, const char *command, const char *argumen
   cmd->len      = 0;
 
   /* TODO: we should use an optimized tree parser here */
+  if(!strcmp(command, "help"))
+    goto DISPLAY_LIST;
   if(!strcmp(command, "push")) {
     cmd->code     = GPUSHD_REQ_PUSH;
     cmd->waiting |= WAITING_ACCEPT_END;
@@ -82,6 +84,7 @@ void parse_command(struct command *cmd, const char *command, const char *argumen
     fprintf(stderr, "argument error: unknown command\n");
     fprintf(stderr, "Use one of the following:\n\n");
 
+  DISPLAY_LIST:
     push_aligned_display("push"   , "Push a value (argument required).", 0);
     push_aligned_display("pop"    , "Pop a value.", 0);
     push_aligned_display("get"    , "Get the value on top of the stack.", 0);
@@ -90,6 +93,7 @@ void parse_command(struct command *cmd, const char *command, const char *argumen
     push_aligned_display("clean"  , "Remove all entries.", 0);
     push_aligned_display("version", "Display server version.", 0);
     push_aligned_display("extver" , "Display extended version information.", 0);
+    push_aligned_display("help"   , "List all available commands.", 0);
 
     commit_aligned_display();
 
