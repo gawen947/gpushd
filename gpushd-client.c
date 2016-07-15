@@ -54,6 +54,9 @@ static unsigned long timeout = DEFAULT_TIMEOUT;
 /* Flag indicating the next message expected for the parser. */
 static int waiting;
 
+/* Specifies if we should use lines when using the list command. */
+static int lines;
+
 /* The functions we use to format value (depends on the --raw option). */
 static const char * (*format_value)(uint64_t, const char *) = scale_metric;
 static const char * (*format_time)(uint64_t) = scale_time;
@@ -175,6 +178,8 @@ static void response_info(const struct request_context *req)
 
 static void response_item(const struct request_context *req)
 {
+  if(lines)
+    fprintf(stdout, "%d - ", lines++);
   fwrite(req->data, req->len, 1, stdout);
   fputc('\n', stdout);
 }
@@ -356,6 +361,7 @@ static void print_help(const char *name)
     { 'V', "version", "Show version information" },
     { 'r', "raw",     "Do not scale values using time or metric units"},
     { 'T', "timeout", "Request timeout (in milliseconds, default: 100)" },
+    { 'l', "line",    "Display line number when listing entries" },
     { 0, NULL, NULL }
   };
 
@@ -382,7 +388,7 @@ int main(int argc, char *argv[])
   prog_name = basename(argv[0]);
 
   while(1) {
-    int c = getopt_long(argc, argv, "hVrT:", opts, NULL);
+    int c = getopt_long(argc, argv, "hVrT:l", opts, NULL);
 
     if(c == -1)
       break;
@@ -397,6 +403,9 @@ int main(int argc, char *argv[])
       goto EXIT;
     case('T'):
       timeout = atoi(optarg);
+      break;
+    case('l'):
+      lines = 1;
       break;
     case('h'):
       exit_status = EXIT_SUCCESS;
@@ -422,6 +431,10 @@ int main(int argc, char *argv[])
 
   /* Parse command */
   parse_command(&cmd, command, argument);
+
+  /* Do not display lines number without the list command. */
+  if(lines && strcmp(command, "list"))
+    lines = 0;
 
   /* Assemble the request, send it and parse the response.
 
