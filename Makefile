@@ -52,8 +52,8 @@ install:
 	$(INSTALL_PROGRAM) gpushd-client $(DESTDIR)/$(PREFIX)/$(BIN)
 
 uninstall:
-	$(RM) $(DESTDIR)/$(PREFIX)/gpushd-server
-	$(RM) $(DESTDIR)/$(PREFIX)/gpushd-client
+	$(RM) $(DESTDIR)/$(PREFIX)/$(BIN)/gpushd-server
+	$(RM) $(DESTDIR)/$(PREFIX)/$(BIN)/gpushd-client
 
 -include $(DEP)
 
