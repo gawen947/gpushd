@@ -31,7 +31,6 @@
 #define sizeof_array(x) (sizeof(x) / sizeof((x)[0]))
 
 const char * basename(const char *s);
-void print_version(const char *name);
 void xstrcpy(char *dst, const char *src, size_t count);
 void xfree(void *ptr);
 

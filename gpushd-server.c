@@ -37,8 +37,8 @@
 #include "gpushd-common.h"
 #include "time-substract.h"
 #include "statistics.h"
-#include "common.h"
 #include "version.h"
+#include "common.h"
 #include "iobuf.h"
 #include "stack.h"
 #include "swap.h"
@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
       timeout = atoi(optarg);
       break;
     case('V'):
-      print_version(prog_name);
+      version(prog_name);
       exit_status = EXIT_SUCCESS;
       goto EXIT;
     case('h'):

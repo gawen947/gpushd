@@ -39,6 +39,7 @@
 #include "gpushd-common.h"
 #include "safe-call.h"
 #include "command.h"
+#include "version.h"
 #include "common.h"
 #include "parser.h"
 #include "buffer.h"
@@ -398,7 +399,7 @@ int main(int argc, char *argv[])
       format_time  = raw_time;
       break;
     case('V'):
-      print_version(prog_name);
+      version(prog_name);
       exit_status = EXIT_SUCCESS;
       goto EXIT;
     case('T'):

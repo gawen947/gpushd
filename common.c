@@ -37,11 +37,6 @@ const char * basename(const char *s)
   return base;
 }
 
-void print_version(const char *name)
-{
-  fprintf(stderr, "%s %s\n", name, PACKAGE_VERSION);
-}
-
 /* Copy a string but fail the length is too large. */
 void xstrcpy(char *dst, const char *src, size_t count)
 {
