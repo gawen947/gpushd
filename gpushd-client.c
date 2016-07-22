@@ -360,6 +360,9 @@ static void print_help(const char *name)
   struct opt_help messages[] = {
     { 'h', "help",    "Show this help message" },
     { 'V', "version", "Show version information" },
+#ifdef COMMIT
+    { 0,   "commit",  "Display commit information" },
+#endif /* COMMIT */
     { 'r', "raw",     "Do not scale values using time or metric units"},
     { 'T', "timeout", "Request timeout (in milliseconds, default: 100)" },
     { 'l', "line",    "Display line number when listing entries" },
@@ -378,9 +381,16 @@ int main(int argc, char *argv[])
   const char *socket_path;
   const char *prog_name;
 
+  enum opt {
+    OPT_COMMIT = 0x100
+  };
+
   struct option opts[] = {
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, 'V' },
+#ifdef COMMIT
+    { "commit", no_argument, NULL, OPT_COMMIT },
+#endif /* COMMIT */
     { "raw", no_argument, NULL, 'r' },
     { "timeout", required_argument, NULL, 'T' },
     { NULL, 0, NULL, 0 }
@@ -398,6 +408,12 @@ int main(int argc, char *argv[])
       format_value = raw_value;
       format_time  = raw_time;
       break;
+#ifdef COMMIT
+    case(OPT_COMMIT):
+      commit();
+      exit_status = EXIT_SUCCESS;
+      goto EXIT;
+#endif /* COMMIT */
     case('V'):
       version(prog_name);
       exit_status = EXIT_SUCCESS;

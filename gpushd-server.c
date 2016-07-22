@@ -399,6 +399,9 @@ static void print_help(const char *name)
   struct opt_help messages[] = {
     { 'h', "help",    "Show this help message" },
     { 'V', "version", "Show version information" },
+#ifdef COMMIT
+    { 0,   "commit",  "Display commit information" },
+#endif /* COMMIT */
     { 's', "sync",    "Sync after a number of request" },
     { 'd', "default", "Default value for an empty stack" },
     { 'n', "no-swap", "Do not use a swap file" },
@@ -456,9 +459,16 @@ int main(int argc, char *argv[])
   int           sync_ttl    = 0;
   int           reset       = 0;
 
+  enum opt {
+    OPT_COMMIT = 0x100
+  };
+
   struct option opts[] = {
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, 'V' },
+#ifdef COMMIT
+    { "commit", no_argument, NULL, OPT_COMMIT },
+#endif /* COMMIT */
     { "sync", required_argument, NULL, 's' },
     { "default", required_argument, NULL, 'd' },
     { "no-swap", no_argument, NULL, 'n' },
@@ -514,6 +524,12 @@ int main(int argc, char *argv[])
       version(prog_name);
       exit_status = EXIT_SUCCESS;
       goto EXIT;
+#ifdef COMMIT
+    case(OPT_COMMIT):
+      commit();
+      exit_status = EXIT_SUCCESS;
+      goto EXIT;
+#endif /* COMMIT */
     case('h'):
       exit_status = EXIT_SUCCESS;
     default:
