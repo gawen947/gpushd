@@ -343,9 +343,9 @@ static void client(const struct command *cmd, const char *socket_path)
 
   /* configure timeout limit */
   timeout           *= 1000; /* ms to us */
-  tv_timeout.tv_sec  = timeout / 1000000;
-  tv_timeout.tv_usec = timeout % 1000000;
-  setsockopt(request.fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
+  tv_timeout = (struct timeval){ .tv_sec  = timeout / 1000000,
+                                 .tv_usec = timeout % 1000000 };
+  setsockopt(request.fd, SOL_SOCKET, SO_RCVTIMEO, &tv_timeout, sizeof(struct timeval));
 
   /* We only parse the response when needed. */
   if(waiting)
