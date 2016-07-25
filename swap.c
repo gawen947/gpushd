@@ -187,11 +187,11 @@ void swap_load(const char *swap_path, int reset, unsigned int *entry_limit, uint
     warnx("trying to migrate swap file from version %d to version %d", version, GPUSHD_SWAP_VERSION);
 
   switch(version) {
-  case(1):
-  case(2):
+  case 1:
+  case 2:
     warnx("version %d deprecated", version);
     break;
-  case(3):
+  case 3:
     swap_load_3(file, reset, entry_limit, mem_limit);
     break;
   default:

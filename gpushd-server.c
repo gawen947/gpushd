@@ -488,19 +488,19 @@ int main(int argc, char *argv[])
       break;
 
     switch(c) {
-    case('s'):
+    case 's':
       sync_ttl = atoi(optarg);
       if(sync < 0)
         errx(EXIT_FAILURE, "invalid number of request");
       break;
-    case('d'):
+    case 'd':
       empty_item = optarg;
       empty_len  = strlen(optarg);
       break;
-    case('n'):
+    case 'n':
       no_swap = 1;
       break;
-    case('S'):
+    case 'S':
       entry_limit = atoi(optarg);
 
       /* No limit (0) is actually the maximum.
@@ -509,28 +509,28 @@ int main(int argc, char *argv[])
       if(entry_limit == 0)
         entry_limit = -1;
       break;
-    case('M'):
+    case 'M':
       mem_limit = atoi(optarg);
       if(mem_limit == 0)
         mem_limit = -1;
       break;
-    case ('R'):
+    case 'R':
       reset = 1;
       break;
-    case('T'):
+    case 'T':
       timeout = atoi(optarg);
       break;
-    case('V'):
+    case 'V':
       version(prog_name);
       exit_status = EXIT_SUCCESS;
       goto EXIT;
 #ifdef COMMIT
-    case(OPT_COMMIT):
+    case OPT_COMMIT:
       commit();
       exit_status = EXIT_SUCCESS;
       goto EXIT;
 #endif /* COMMIT */
-    case('h'):
+    case 'h':
       exit_status = EXIT_SUCCESS;
     default:
       print_help(prog_name);

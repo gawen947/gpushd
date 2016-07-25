@@ -254,12 +254,12 @@ static int parsed(const struct gpushd_message *message, void *data)
 
   /* special messages */
   switch(message->code) {
-  case(GPUSHD_RES_END):
+  case GPUSHD_RES_END:
     if(waiting & WAITING_ACCEPT_END)
       return 0;
     else
       errx(EXIT_FAILURE, "unexpected end response");
-  case(GPUSHD_RES_ERROR):
+  case GPUSHD_RES_ERROR:
     response_error(req);
     assert(0); /* response_error must abort */
   default:
@@ -404,27 +404,27 @@ int main(int argc, char *argv[])
     if(c == -1)
       break;
     switch(c) {
-    case('r'):
+    case 'r':
       format_value = raw_value;
       format_time  = raw_time;
       break;
 #ifdef COMMIT
-    case(OPT_COMMIT):
+    case OPT_COMMIT:
       commit();
       exit_status = EXIT_SUCCESS;
       goto EXIT;
 #endif /* COMMIT */
-    case('V'):
+    case 'V':
       version(prog_name);
       exit_status = EXIT_SUCCESS;
       goto EXIT;
-    case('T'):
+    case 'T':
       timeout = atoi(optarg);
       break;
-    case('l'):
+    case 'l':
       lines = 1;
       break;
-    case('h'):
+    case 'h':
       exit_status = EXIT_SUCCESS;
     default:
       print_help(prog_name);
