@@ -22,12 +22,15 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _POSIX_C_SOURCE 199309L
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <getopt.h>
 #include <string.h>
 #include <assert.h>
@@ -335,7 +338,6 @@ static void report_request_time(struct timespec *begin, struct timespec *end)
 static void server(const char *socket_path, int sync)
 {
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
-  struct timeval tv_timeout;
   int ttl = sync;
   int sd;
 
@@ -367,8 +369,6 @@ static void server(const char *socket_path, int sync)
 
     /* configure timeout limit */
     timeout           *= 1000; /* ms to us */
-    tv_timeout.tv_sec  = timeout / 1000000;
-    tv_timeout.tv_usec = timeout % 1000000;
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(struct timeval));
 
     /* read the message */

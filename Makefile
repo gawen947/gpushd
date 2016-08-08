@@ -15,6 +15,10 @@ CLIENT_OBJ = gpushd-client.o version.o help.o safe-call.o common.o aligned-displ
 PREFIX  ?= /usr/local
 BIN     ?= /bin
 
+ifeq ($(OS),Linux)
+	CFLAGS  += -D_BSD_SOURCE=1
+endif
+
 commit = $(shell ./hash.sh)
 ifneq ($(commit), UNKNOWN)
 	CFLAGS += -DCOMMIT="\"$(commit)\""
