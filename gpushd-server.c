@@ -254,6 +254,7 @@ static void request_extver(const struct request_context *req)
 #ifdef COMMIT
     { "commit",   COMMIT },
 #endif /* COMMIT */
+    { "target",   TARGET },
     { "protocol", stringify(GPUSHD_PROTOCOL_VERSION) },
     { "swap",     stringify(GPUSHD_SWAP_VERSION) },
     { "author",   GPUSHD_AUTHOR },

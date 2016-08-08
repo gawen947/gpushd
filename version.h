@@ -40,6 +40,20 @@
 
 #define VERSION stringify(GPUSHD_MAJOR_VERSION) "." stringify(GPUSHD_MINOR_VERSION)
 
+#if defined(__FreeBSD__)
+# define TARGET "FreeBSD"
+#elif defined(__OpenBSD__)
+# define TARGET "OpenBSD"
+#elif defined(__NetBSD__)
+# define TARGET "NetBSD"
+#elif defined(__linux__)
+# define TARGET "Linux"
+#elif defined(__APPLE__)
+# define TARGET "MacOS X"
+#else
+# define TARGET "unknown"
+#endif /* TARGET */
+
 #if !(defined COMMIT && defined PARTIAL_COMMIT)
 # define PACKAGE_VERSION PACKAGE " v" VERSION
 #else
