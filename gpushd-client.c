@@ -26,6 +26,8 @@
 # define _POSIX_C_SOURCE 200809L
 #endif /* __linux__ */
 
+#define __STDC_FORMAT_MACROS
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -33,6 +35,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <getopt.h>
 #include <string.h>
 #include <unistd.h>
@@ -71,9 +74,9 @@ static const char * raw_value(uint64_t value, const char *unit)
   static char buffer[DISPLAY_VALUE_BUFFER];
 
   if(unit)
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu %s", value, unit);
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%"PRIu64" %s", value, unit);
   else
-    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%lu", value);
+    snprintf(buffer, DISPLAY_VALUE_BUFFER, "%"PRIu64, value);
 
   return buffer;
 }

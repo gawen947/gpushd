@@ -41,7 +41,7 @@ const char * basename(const char *s)
 void xstrcpy(char *dst, const char *src, size_t count)
 {
   if(strlen(src) > count)
-    err(EXIT_FAILURE, "strcpy(%lu)", count);
+    err(EXIT_FAILURE, "strcpy(%zu)", count);
   strcpy(dst, src);
 }
 
