@@ -22,7 +22,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _POSIX_C_SOURCE 200809L
+#ifdef __linux__
+# define _POSIX_C_SOURCE 200809L
+#endif /* __linux__ */
 
 #include <sys/socket.h>
 #include <sys/types.h>
