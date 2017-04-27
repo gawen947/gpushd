@@ -37,7 +37,7 @@ const char * basename(const char *s)
   return base;
 }
 
-/* Copy a string but fail the length is too large. */
+/* Copy a string but fail when the length is too large. */
 void xstrcpy(char *dst, const char *src, size_t count)
 {
   if(strlen(src) > count)
