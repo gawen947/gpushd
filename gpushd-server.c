@@ -52,7 +52,7 @@
 #include "safe-call.h"
 
 /* Timeout value (in ms) */
-static unsigned long timeout = DEFAULT_TIMEOUT;
+static unsigned int timeout = DEFAULT_TIMEOUT;
 
 /* path to a swap file for the stack and statistics
    and the unix socket used for the server */
