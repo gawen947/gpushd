@@ -27,8 +27,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include <gawen/safe-call.h>
+
 #include "stack.h"
-#include "safe-call.h"
 #include "gpushd-common.h"
 
 /* items are placed on a simple FIFO stack

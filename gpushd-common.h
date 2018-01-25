@@ -28,7 +28,7 @@
 #include <sys/socket.h>
 #include <stdint.h>
 
-#include "iobuf.h"
+#include <gawen/iobuf.h>
 
 /* Default timeout (in millisecs). */
 #define DEFAULT_TIMEOUT 100

@@ -42,17 +42,19 @@
 #include <err.h>
 #include <assert.h>
 
-#include "aligned-display.h"
+#include <gawen/safe-call.h>
+#include <gawen/common.h>
+#include <gawen/string.h>
+#include <gawen/align.h>
+#include <gawen/scale.h>
+#include <gawen/help.h>
+
 #include "gpushd-common.h"
-#include "safe-call.h"
 #include "command.h"
 #include "version.h"
-#include "common.h"
 #include "parser.h"
 #include "buffer.h"
 #include "names.h"
-#include "scale.h"
-#include "help.h"
 
 #define DISPLAY_VALUE_BUFFER UINT8_MAX
 
@@ -67,7 +69,7 @@ static int lines;
 
 /* The functions we use to format value (depends on the --raw option). */
 static const char * (*format_value)(uint64_t, const char *) = scale_metric;
-static const char * (*format_time)(uint64_t) = scale_time;
+static const char * (*format_time)(uint64_t) = scale_nsec;
 
 static const char * raw_value(uint64_t value, const char *unit)
 {
@@ -359,7 +361,7 @@ static void client(const struct command *cmd, const char *socket_path)
     recv_response(&request);
 
   /* If we used the aligned display, we display it now. */
-  commit_aligned_display();
+  commit_aligned_display(stdout);
 }
 
 static void print_help(const char *name)

@@ -27,11 +27,12 @@
 #include <stdint.h>
 #include <err.h>
 
+#include <gawen/iobuf.h>
+
 #include "gpushd-common.h"
 #include "statistics.h"
 #include "buffer.h"
 #include "stack.h"
-#include "iobuf.h"
 #include "swap.h"
 
 enum s_magic {

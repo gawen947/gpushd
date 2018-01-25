@@ -27,7 +27,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "aligned-display.h"
+#include <gawen/align.h>
+
 #include "gpushd-common.h"
 #include "command.h"
 
@@ -95,7 +96,7 @@ void parse_command(struct command *cmd, const char *command, const char *argumen
     push_aligned_display("extver" , "Display extended version information.", 0);
     push_aligned_display("help"   , "List all available commands.", 0);
 
-    commit_aligned_display();
+    commit_aligned_display(stdout);
 
     exit(EXIT_FAILURE);
   }

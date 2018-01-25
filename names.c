@@ -24,7 +24,8 @@
 
 #include <stdlib.h>
 
-#include "common.h"
+#include <gawen/common.h>
+
 #include "names.h"
 
 static const char *error_major[] = {
