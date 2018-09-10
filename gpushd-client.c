@@ -68,8 +68,8 @@ static int waiting;
 static int lines;
 
 /* The functions we use to format value (depends on the --raw option). */
-static const char * (*format_value)(uint64_t, const char *) = scale_metric;
-static const char * (*format_time)(uint64_t) = scale_nsec;
+static const char * (*format_value)(uint64_t, const char *) = scale_metric_u64;
+static const char * (*format_time)(uint64_t) = scale_nsec_u64;
 
 static const char * raw_value(uint64_t value, const char *unit)
 {
